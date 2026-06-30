@@ -133,8 +133,8 @@ export class PropertyDetailPanelComponent implements OnChanges {
           }
 
           this.events = [...events].sort((left, right) => {
-            const leftDate = new Date(left.fecha ?? 0).getTime();
-            const rightDate = new Date(right.fecha ?? 0).getTime();
+            const leftDate = left.fecha ? new Date(left.fecha).getTime() : Number.NEGATIVE_INFINITY;
+            const rightDate = right.fecha ? new Date(right.fecha).getTime() : Number.NEGATIVE_INFINITY;
             return rightDate - leftDate;
           });
         },
@@ -162,7 +162,7 @@ export class PropertyDetailPanelComponent implements OnChanges {
     };
 
     if (this.eventFormModel.fecha) {
-      payload.fecha = this.toLocalDateIso(this.eventFormModel.fecha);
+      payload.fecha = this.toCalendarDateIso(this.eventFormModel.fecha);
     }
 
     if (this.eventFormModel.url.trim()) {
@@ -179,9 +179,10 @@ export class PropertyDetailPanelComponent implements OnChanges {
     return observations ? `${description}\n\nObservaciones: ${observations}` : description;
   }
 
-  private toLocalDateIso(rawDate: string): string {
+  private toCalendarDateIso(rawDate: string): string {
     const [year, month, day] = rawDate.split('-').map(Number);
-    return new Date(year, month - 1, day).toISOString();
+    // Use UTC noon so a date-only value keeps the same calendar day across client time zones.
+    return new Date(Date.UTC(year, month - 1, day, 12, 0, 0)).toISOString();
   }
 
   private isValidUrl(url: string): boolean {

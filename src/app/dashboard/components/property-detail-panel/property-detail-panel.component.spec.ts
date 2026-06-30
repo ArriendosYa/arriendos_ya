@@ -118,7 +118,7 @@ describe('PropertyDetailPanelComponent', () => {
     expect(payload.url).toBe('https://meet.example.com/abc');
     expect(payload.descripcion).toContain('Visita con cliente');
     expect(payload.descripcion).toContain('Observaciones: Cliente confirmado');
-    expect(payload.fecha).toBe(new Date(2026, 6, 1).toISOString());
+    expect(payload.fecha).toBe('2026-07-01T12:00:00.000Z');
     expect(fixture.componentInstance.eventFormModel.descripcion).toBe('');
     expect(fixture.componentInstance.events.length).toBe(2);
   });
