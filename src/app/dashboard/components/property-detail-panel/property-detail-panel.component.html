@@ -62,12 +62,130 @@
         <span *ngIf="!isSaving">Guardar cambios</span>
       </button>
     </div>
+
+    <section class="events-section">
+      <div class="events-header">
+        <div>
+          <p class="eyebrow">Eventos</p>
+          <h3>Historial de actividad</h3>
+        </div>
+
+        <button
+          *ngIf="property.id"
+          type="button"
+          class="ghost-button"
+          [disabled]="isLoadingEvents || isCreatingEvent"
+          (click)="refreshEvents()"
+        >
+          Actualizar
+        </button>
+      </div>
+
+      <ng-container *ngIf="property.id; else unsavedPropertyState">
+        <form class="event-form" #eventForm="ngForm" (ngSubmit)="createEvent()">
+          <div class="field-grid">
+            <label class="field">
+              <span>Tipo de evento</span>
+              <select name="eventType" [(ngModel)]="eventFormModel.tipo" required>
+                <option *ngFor="let type of eventTypeOptions" [ngValue]="type">
+                  {{ formatEventType(type) }}
+                </option>
+              </select>
+            </label>
+
+            <label class="field">
+              <span>Fecha del evento</span>
+              <input type="date" name="eventDate" [(ngModel)]="eventFormModel.fecha" />
+              <small>Si la dejas vacía, el backend asignará la fecha actual.</small>
+            </label>
+
+            <label class="field field-full">
+              <span>Descripción</span>
+              <textarea
+                name="eventDescription"
+                rows="3"
+                [(ngModel)]="eventFormModel.descripcion"
+                required
+              ></textarea>
+            </label>
+
+            <label class="field field-full">
+              <span>Observaciones</span>
+              <textarea
+                name="eventObservations"
+                rows="2"
+                [(ngModel)]="eventFormModel.observaciones"
+              ></textarea>
+            </label>
+
+            <label class="field field-full">
+              <span>Enlace relacionado</span>
+              <input
+                type="url"
+                name="eventUrl"
+                placeholder="https://meet.example.com/abc"
+                [(ngModel)]="eventFormModel.url"
+              />
+            </label>
+          </div>
+
+          <div class="event-form-footer">
+            <div class="attachment-note">
+              <span>Adjuntos</span>
+              <p>La API actual no soporta archivos adjuntos en este flujo.</p>
+            </div>
+
+            <button
+              type="submit"
+              class="save-button"
+              [disabled]="isCreatingEvent || !eventForm.form.valid"
+            >
+              <span *ngIf="isCreatingEvent">Guardando evento...</span>
+              <span *ngIf="!isCreatingEvent">Guardar evento</span>
+            </button>
+          </div>
+        </form>
+
+        <p *ngIf="eventFormErrorMessage" class="error-message">{{ eventFormErrorMessage }}</p>
+        <p *ngIf="eventsErrorMessage" class="error-message">{{ eventsErrorMessage }}</p>
+
+        <div *ngIf="isLoadingEvents" class="timeline-state">Cargando eventos...</div>
+
+        <ol *ngIf="!isLoadingEvents && events.length" class="timeline">
+          <li *ngFor="let event of events" class="timeline-item">
+            <div class="timeline-marker"></div>
+            <article class="timeline-card">
+              <div class="timeline-card-header">
+                <span class="event-type">{{ formatEventType(event.tipo) }}</span>
+                <time>{{ formatEventDate(event.fecha) }}</time>
+              </div>
+
+              <p class="event-description">{{ event.descripcion }}</p>
+
+              <a *ngIf="event.url" [href]="event.url" target="_blank" rel="noopener noreferrer">
+                Abrir enlace relacionado
+              </a>
+            </article>
+          </li>
+        </ol>
+
+        <div *ngIf="!isLoadingEvents && !events.length && !eventsErrorMessage" class="timeline-state">
+          Esta propiedad aún no tiene eventos registrados.
+        </div>
+      </ng-container>
+    </section>
   </ng-container>
 
   <ng-template #emptyState>
     <div class="empty-state">
       <h2>Sin selección</h2>
       <p>Selecciona una propiedad para revisar o actualizar su información.</p>
+    </div>
+  </ng-template>
+
+  <ng-template #unsavedPropertyState>
+    <div class="timeline-state">
+      Guarda la propiedad para poder asociarle eventos y consultar su historial.
     </div>
   </ng-template>
 </aside>

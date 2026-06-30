@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { PropertyRecord } from '../../models/property.model';
+import { PropertyEventService } from '../../services/property-event.service';
 import { PropertyManagementService } from '../../services/property-management.service';
 import { PropertyManagementPageComponent } from './property-management-page.component';
 
@@ -36,6 +37,10 @@ describe('PropertyManagementPageComponent', () => {
     'PropertyManagementService',
     ['listProperties', 'createProperty', 'updateProperty', 'deleteProperty']
   );
+  const propertyEventServiceSpy = jasmine.createSpyObj<PropertyEventService>(
+    'PropertyEventService',
+    ['listByPropertyId', 'createEvent']
+  );
 
   beforeEach(async () => {
     serviceSpy.listProperties.calls.reset();
@@ -46,13 +51,25 @@ describe('PropertyManagementPageComponent', () => {
     serviceSpy.createProperty.and.returnValue(of(MOCK_PROPERTIES[0]));
     serviceSpy.updateProperty.and.returnValue(of(MOCK_PROPERTIES[0]));
     serviceSpy.deleteProperty.and.returnValue(of(undefined));
+    propertyEventServiceSpy.listByPropertyId.calls.reset();
+    propertyEventServiceSpy.createEvent.calls.reset();
+    propertyEventServiceSpy.listByPropertyId.and.returnValue(of([]));
+    propertyEventServiceSpy.createEvent.and.returnValue(
+      of({
+        id: 1,
+        tipo: 'visita',
+        descripcion: 'Evento creado',
+        propiedad: { id: 1 }
+      })
+    );
 
     await TestBed.configureTestingModule({
       imports: [PropertyManagementPageComponent],
       providers: [
         provideZonelessChangeDetection(),
         provideRouter([]),
-        { provide: PropertyManagementService, useValue: serviceSpy }
+        { provide: PropertyManagementService, useValue: serviceSpy },
+        { provide: PropertyEventService, useValue: propertyEventServiceSpy }
       ]
     }).compileComponents();
   });
