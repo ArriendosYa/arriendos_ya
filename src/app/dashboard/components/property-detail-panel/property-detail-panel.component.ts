@@ -162,7 +162,7 @@ export class PropertyDetailPanelComponent implements OnChanges {
     };
 
     if (this.eventFormModel.fecha) {
-      payload.fecha = new Date(`${this.eventFormModel.fecha}T12:00:00Z`).toISOString();
+      payload.fecha = this.toLocalDateIso(this.eventFormModel.fecha);
     }
 
     if (this.eventFormModel.url.trim()) {
@@ -177,6 +177,11 @@ export class PropertyDetailPanelComponent implements OnChanges {
     const observations = this.eventFormModel.observaciones.trim();
 
     return observations ? `${description}\n\nObservaciones: ${observations}` : description;
+  }
+
+  private toLocalDateIso(rawDate: string): string {
+    const [year, month, day] = rawDate.split('-').map(Number);
+    return new Date(year, month - 1, day).toISOString();
   }
 
   private isValidUrl(url: string): boolean {

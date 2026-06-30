@@ -118,8 +118,23 @@ describe('PropertyDetailPanelComponent', () => {
     expect(payload.url).toBe('https://meet.example.com/abc');
     expect(payload.descripcion).toContain('Visita con cliente');
     expect(payload.descripcion).toContain('Observaciones: Cliente confirmado');
-    expect(payload.fecha).toBe('2026-07-01T12:00:00.000Z');
+    expect(payload.fecha).toBe(new Date(2026, 6, 1).toISOString());
     expect(fixture.componentInstance.eventFormModel.descripcion).toBe('');
     expect(fixture.componentInstance.events.length).toBe(2);
+  });
+
+  it('should omit event date from the payload when the user leaves it empty', () => {
+    propertyEventServiceSpy.listByPropertyId.and.returnValue(of([]));
+
+    const fixture = TestBed.createComponent(PropertyDetailPanelComponent);
+
+    fixture.componentRef.setInput('property', MOCK_PROPERTY);
+    fixture.detectChanges();
+    fixture.componentInstance.eventFormModel.descripcion = 'Seguimiento telefónico';
+
+    fixture.componentInstance.createEvent();
+
+    const payload = propertyEventServiceSpy.createEvent.calls.mostRecent().args[0];
+    expect(payload.fecha).toBeUndefined();
   });
 });
