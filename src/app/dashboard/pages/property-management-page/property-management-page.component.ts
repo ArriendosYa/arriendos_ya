@@ -1,12 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { finalize } from 'rxjs';
 import { PropertyDetailPanelComponent } from '../../components/property-detail-panel/property-detail-panel.component';
 import { PropertyManagementFiltersComponent } from '../../components/property-management-filters/property-management-filters.component';
 import { PropertyManagementTableComponent } from '../../components/property-management-table/property-management-table.component';
+import { ContactRecord } from '../../models/contact.model';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { TopbarComponent } from '../../components/topbar/topbar.component';
 import { PropertyFilters, PropertyRecord } from '../../models/property.model';
+import { ContactManagementService } from '../../services/contact-management.service';
 import { PropertyManagementService } from '../../services/property-management.service';
 
 const DEFAULT_FILTERS: PropertyFilters = {
@@ -23,7 +26,8 @@ const EMPTY_PROPERTY: PropertyRecord = {
   numeroHabitaciones: 0,
   numeroBanos: 0,
   precioArriendo: 0,
-  disponible: true
+  disponible: true,
+  propietario: { rut: '' }
 };
 
 @Component({
@@ -42,6 +46,8 @@ const EMPTY_PROPERTY: PropertyRecord = {
 })
 export class PropertyManagementPageComponent {
   private readonly propertyService = inject(PropertyManagementService);
+  private readonly contactService = inject(ContactManagementService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly pageSize = 5;
   readonly properties = signal<PropertyRecord[]>([]);
@@ -53,6 +59,7 @@ export class PropertyManagementPageComponent {
   readonly isSaving = signal(false);
   readonly isDeleting = signal(false);
   readonly errorMessage = signal('');
+  readonly owners = signal<ContactRecord[]>([]);
 
   readonly comunas = computed(() => Array.from(new Set(this.properties().map((p) => p.comuna))));
 
@@ -97,6 +104,7 @@ export class PropertyManagementPageComponent {
 
   constructor() {
     this.loadProperties();
+    this.loadOwners();
 
     effect(() => {
       const totalPages = this.totalPages();
@@ -138,22 +146,30 @@ export class PropertyManagementPageComponent {
   }
 
   saveProperty(property: PropertyRecord): void {
+    const ownerRut = property.propietario?.rut?.trim();
+    if (!ownerRut) {
+      this.errorMessage.set('Debes seleccionar un propietario para la propiedad.');
+      return;
+    }
+
     this.isSaving.set(true);
     this.errorMessage.set('');
+    const payload = {
+      direccion: property.direccion,
+      comuna: property.comuna,
+      ciudad: property.ciudad,
+      region: property.region,
+      numeroHabitaciones: property.numeroHabitaciones,
+      numeroBanos: property.numeroBanos,
+      precioArriendo: property.precioArriendo,
+      disponible: property.disponible,
+      propietario: { rut: ownerRut }
+    };
 
     const request$ =
       property.id === 0
-        ? this.propertyService.createProperty({
-            direccion: property.direccion,
-            comuna: property.comuna,
-            ciudad: property.ciudad,
-            region: property.region,
-            numeroHabitaciones: property.numeroHabitaciones,
-            numeroBanos: property.numeroBanos,
-            precioArriendo: property.precioArriendo,
-            disponible: property.disponible
-          })
-        : this.propertyService.updateProperty(property.id, property);
+        ? this.propertyService.createProperty(payload)
+        : this.propertyService.updateProperty(property.id, { id: property.id, ...payload });
 
     request$.pipe(finalize(() => this.isSaving.set(false))).subscribe({
       next: (saved) => {
@@ -200,6 +216,20 @@ export class PropertyManagementPageComponent {
         },
         error: () => {
           this.errorMessage.set('No se pudieron cargar las propiedades.');
+        }
+      });
+  }
+
+  private loadOwners(): void {
+    this.contactService
+      .listContacts('propietarios')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (owners) => this.owners.set(owners),
+        error: () => {
+          this.errorMessage.set(
+            'No se pudieron cargar los propietarios. Por favor, intenta recargar la página.'
+          );
         }
       });
   }

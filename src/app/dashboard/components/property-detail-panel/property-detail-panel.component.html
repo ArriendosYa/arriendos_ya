@@ -1,59 +1,75 @@
 <aside class="detail-card">
-  <ng-container *ngIf="editableProperty as property; else emptyState">
+  <ng-container *ngIf="editableProperty; else emptyState">
     <div class="panel-header">
       <div>
         <p class="eyebrow">Detalle</p>
-        <h2>{{ property.id ? property.direccion : 'Nueva Propiedad' }}</h2>
+        <h2>{{ editableProperty.id ? editableProperty.direccion : 'Nueva Propiedad' }}</h2>
       </div>
-      <span class="property-id" *ngIf="property.id">{{ property.id }}</span>
+      <span class="property-id" *ngIf="editableProperty.id">{{ editableProperty.id }}</span>
     </div>
 
     <div class="field-grid">
       <label class="field field-full">
         <span>Dirección</span>
-        <input type="text" [(ngModel)]="property.direccion" />
+        <input type="text" [(ngModel)]="editableProperty.direccion" />
       </label>
 
       <label class="field">
         <span>Comuna</span>
-        <input type="text" [(ngModel)]="property.comuna" />
+        <input type="text" [(ngModel)]="editableProperty.comuna" />
       </label>
 
       <label class="field">
         <span>Ciudad</span>
-        <input type="text" [(ngModel)]="property.ciudad" />
+        <input type="text" [(ngModel)]="editableProperty.ciudad" />
       </label>
 
       <label class="field field-full">
         <span>Región</span>
-        <input type="text" [(ngModel)]="property.region" />
+        <input type="text" [(ngModel)]="editableProperty.region" />
       </label>
 
       <label class="field">
         <span>Habitaciones</span>
-        <input type="number" min="0" [(ngModel)]="property.numeroHabitaciones" />
+        <input type="number" min="0" [(ngModel)]="editableProperty.numeroHabitaciones" />
       </label>
 
       <label class="field">
         <span>Baños</span>
-        <input type="number" min="0" [(ngModel)]="property.numeroBanos" />
+        <input type="number" min="0" [(ngModel)]="editableProperty.numeroBanos" />
       </label>
 
       <label class="field">
         <span>Precio Arriendo (CLP)</span>
-        <input type="number" min="0" [(ngModel)]="property.precioArriendo" />
+        <input type="number" min="0" [(ngModel)]="editableProperty.precioArriendo" />
       </label>
 
       <label class="field">
         <span>Disponible</span>
-        <select [(ngModel)]="property.disponible">
+        <select [(ngModel)]="editableProperty.disponible">
           <option [ngValue]="true">Sí</option>
           <option [ngValue]="false">No</option>
         </select>
       </label>
+
+      <label class="field field-full">
+        <span>Propietario</span>
+        <select [(ngModel)]="editableProperty.propietario.rut">
+          <option value="">Selecciona un propietario</option>
+          <option
+            *ngIf="editableProperty.propietario?.rut && !hasOwnerInList(editableProperty.propietario.rut)"
+            [ngValue]="editableProperty.propietario?.rut"
+          >
+            Actual ({{ editableProperty.propietario.rut }})
+          </option>
+          <option *ngFor="let owner of owners" [ngValue]="owner.rut">{{ formatOwnerLabel(owner) }}</option>
+        </select>
+      </label>
     </div>
 
-    <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <p *ngIf="validationMessage || errorMessage" class="error-message">
+      {{ validationMessage || errorMessage }}
+    </p>
 
     <div class="panel-footer">
       <span class="helper-text">Edita información clave y guarda los cambios.</span>

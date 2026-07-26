@@ -20,7 +20,8 @@ const MOCK_AVAILABLE_PROPERTY: PropertyRecord = {
   numeroHabitaciones: 3,
   numeroBanos: 2,
   precioArriendo: 680000,
-  disponible: true
+  disponible: true,
+  propietario: { rut: '12.345.678-5' }
 };
 
 const MOCK_ASSIGNED_PROPERTY: PropertyRecord = {
