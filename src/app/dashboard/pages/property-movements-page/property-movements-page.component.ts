@@ -230,10 +230,16 @@ export class PropertyMovementsPageComponent {
     this.comprobanteModalAlt.set(DEFAULT_COMPROBANTE_ALT);
   }
 
+  onComprobanteImageError(): void {
+    this.closeComprobanteModal();
+    this.movimientosError.set('No se pudo cargar la imagen del comprobante.');
+  }
+
   buildComprobanteAlt(movimiento: MovimientoRecord): string {
     const monto = new Intl.NumberFormat('es-CL').format(movimiento.monto);
     const fecha = movimiento.fecha || 'fecha no informada';
-    return `Comprobante de ${movimiento.tipo} por $${monto} del ${fecha}`;
+    const tipo = movimiento.tipo || 'movimiento';
+    return `Comprobante de ${tipo} por $${monto} del ${fecha}`;
   }
 
   deleteMovimiento(movimiento: MovimientoRecord): void {

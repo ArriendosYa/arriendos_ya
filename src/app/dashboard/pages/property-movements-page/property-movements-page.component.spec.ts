@@ -200,4 +200,15 @@ describe('PropertyMovementsPageComponent', () => {
     expect(fixture.componentInstance.isComprobanteModalOpen()).toBeFalse();
     expect(fixture.componentInstance.movimientosError()).toContain('URL es inválida');
   });
+
+  it('should close modal and show error when comprobante image fails to load', () => {
+    const fixture = TestBed.createComponent(PropertyMovementsPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.viewComprobante('https://storage.example.com/comprobantes/1.jpg');
+    fixture.componentInstance.onComprobanteImageError();
+
+    expect(fixture.componentInstance.comprobanteModalUrl()).toBeNull();
+    expect(fixture.componentInstance.movimientosError()).toContain('No se pudo cargar la imagen');
+  });
 });
