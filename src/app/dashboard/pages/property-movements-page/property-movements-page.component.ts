@@ -33,6 +33,8 @@ const EMPTY_MOVIMIENTO_FORM: MovimientoFormModel = {
   estado: ''
 };
 
+const DEFAULT_COMPROBANTE_ALT = 'Comprobante del movimiento';
+
 @Component({
   selector: 'app-property-movements-page',
   standalone: true,
@@ -66,7 +68,7 @@ export class PropertyMovementsPageComponent {
   readonly deletingMovimientoId = signal<number | null>(null);
   readonly isDragOver = signal(false);
   readonly comprobanteModalUrl = signal<string | null>(null);
-  readonly comprobanteModalAlt = signal('Comprobante del movimiento');
+  readonly comprobanteModalAlt = signal(DEFAULT_COMPROBANTE_ALT);
 
   readonly propertyError = signal('');
   readonly movimientosError = signal('');
@@ -212,20 +214,20 @@ export class PropertyMovementsPageComponent {
   }
 
   viewComprobante(url: string, altText?: string): void {
-    const safeUrl = this.sanitizer.sanitize(SecurityContext.URL, url.trim());
-    if (!safeUrl || safeUrl.startsWith('unsafe:')) {
+    const safeUrl = this.validateAndSanitizeUrl(url);
+    if (!safeUrl) {
       this.movimientosError.set('No se pudo visualizar el comprobante porque su URL es inválida.');
       return;
     }
 
     this.movimientosError.set('');
     this.comprobanteModalUrl.set(safeUrl);
-    this.comprobanteModalAlt.set(altText?.trim() || 'Comprobante del movimiento');
+    this.comprobanteModalAlt.set(altText?.trim() || DEFAULT_COMPROBANTE_ALT);
   }
 
   closeComprobanteModal(): void {
     this.comprobanteModalUrl.set(null);
-    this.comprobanteModalAlt.set('Comprobante del movimiento');
+    this.comprobanteModalAlt.set(DEFAULT_COMPROBANTE_ALT);
   }
 
   buildComprobanteAlt(movimiento: MovimientoRecord): string {
@@ -271,6 +273,15 @@ export class PropertyMovementsPageComponent {
 
   private setFile(file: File | null): void {
     this.selectedFile.set(file);
+  }
+
+  private validateAndSanitizeUrl(url: string): string | null {
+    const safeUrl = this.sanitizer.sanitize(SecurityContext.URL, url.trim());
+    if (!safeUrl || safeUrl.startsWith('unsafe:')) {
+      return null;
+    }
+
+    return safeUrl;
   }
 
   private loadProperty(id: number): void {
