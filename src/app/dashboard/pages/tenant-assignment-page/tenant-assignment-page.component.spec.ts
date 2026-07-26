@@ -49,7 +49,7 @@ const MOCK_ARRENDAMIENTO: Arriendo = {
 describe('TenantAssignmentPageComponent', () => {
   const propertyServiceSpy = jasmine.createSpyObj<PropertyManagementService>(
     'PropertyManagementService',
-    ['listProperties', 'assignTenant', 'updateProperty']
+    ['listProperties', 'updateProperty']
   );
   const contactServiceSpy = jasmine.createSpyObj<ContactManagementService>(
     'ContactManagementService',
@@ -66,7 +66,6 @@ describe('TenantAssignmentPageComponent', () => {
 
   beforeEach(async () => {
     propertyServiceSpy.listProperties.calls.reset();
-    propertyServiceSpy.assignTenant.calls.reset();
     propertyServiceSpy.updateProperty.calls.reset();
     contactServiceSpy.listContacts.calls.reset();
     arriendosServiceSpy.list.calls.reset();
@@ -132,7 +131,6 @@ describe('TenantAssignmentPageComponent', () => {
   });
 
   it('should create arriendo on successful confirmation when there is no active arriendo', () => {
-    propertyServiceSpy.assignTenant.and.returnValue(of(MOCK_AVAILABLE_PROPERTY));
     arriendosServiceSpy.create.and.returnValue(of(MOCK_ARRENDAMIENTO));
 
     const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
@@ -151,7 +149,6 @@ describe('TenantAssignmentPageComponent', () => {
     const form = { control: { markAllAsTouched: () => {} }, invalid: false } as any;
     fixture.componentInstance.confirmAssignment(form);
 
-    expect(propertyServiceSpy.assignTenant).toHaveBeenCalledWith(4, '12345678-9');
     expect(propertyServiceSpy.updateProperty).toHaveBeenCalledWith(4, {
       ...MOCK_AVAILABLE_PROPERTY,
       disponible: false
@@ -171,7 +168,6 @@ describe('TenantAssignmentPageComponent', () => {
   it('should update arriendo when the selected property already has an active arriendo', () => {
     const existingArriendo: Arriendo = { ...MOCK_ARRENDAMIENTO, id: 70 };
     arriendosServiceSpy.list.and.returnValue(of([existingArriendo]));
-    propertyServiceSpy.assignTenant.and.returnValue(of(MOCK_AVAILABLE_PROPERTY));
     arriendosServiceSpy.update.and.returnValue(of(existingArriendo));
 
     const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
@@ -222,7 +218,6 @@ describe('TenantAssignmentPageComponent', () => {
   });
 
   it('should show mapped HTTP error when arriendo create fails', () => {
-    propertyServiceSpy.assignTenant.and.returnValue(of(MOCK_AVAILABLE_PROPERTY));
     arriendosServiceSpy.create.and.returnValue(
       throwError(() => new HttpErrorResponse({ status: 400 }))
     );

@@ -182,14 +182,8 @@ export class TenantAssignmentPageComponent implements OnInit {
     this.feedbackMessage.set('');
 
     this.propertyService
-      .assignTenant(property.id, tenant.id)
+      .updateProperty(property.id, { ...property, disponible: false })
       .pipe(
-        switchMap(() =>
-          this.propertyService.updateProperty(property.id, {
-            ...property,
-            disponible: false
-          })
-        ),
         switchMap((assignedProperty) => {
           this.allProperties.update((properties) =>
             properties.map((item) =>
