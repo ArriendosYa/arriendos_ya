@@ -30,7 +30,7 @@ const MOVIMIENTOS: MovimientoRecord[] = [
     monto: 800000,
     fecha: '2026-07-01',
     estado: 'PAGADO',
-    urlComprobante: 'https://storage.example.com/comprobantes/1.pdf'
+    urlComprobante: 'https://storage.example.com/comprobantes/1.jpg'
   }
 ];
 
@@ -167,15 +167,25 @@ describe('PropertyMovementsPageComponent', () => {
     expect(fixture.componentInstance.formError()).toBe('Error de backend');
   });
 
-  it('should open comprobante URL in a new tab', () => {
-    const openSpy = spyOn(window, 'open');
-
+  it('should open comprobante image in modal', () => {
     const fixture = TestBed.createComponent(PropertyMovementsPageComponent);
     fixture.detectChanges();
 
-    const url = 'https://storage.example.com/comprobantes/1.pdf';
+    const url = 'https://storage.example.com/comprobantes/1.jpg';
     fixture.componentInstance.viewComprobante(url);
 
-    expect(openSpy).toHaveBeenCalledWith(url, '_blank', 'noopener,noreferrer');
+    expect(fixture.componentInstance.comprobanteModalUrl()).toBe(url);
+    expect(fixture.componentInstance.isComprobanteModalOpen()).toBeTrue();
+  });
+
+  it('should close comprobante modal', () => {
+    const fixture = TestBed.createComponent(PropertyMovementsPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.viewComprobante('https://storage.example.com/comprobantes/1.jpg');
+    fixture.componentInstance.closeComprobanteModal();
+
+    expect(fixture.componentInstance.comprobanteModalUrl()).toBeNull();
+    expect(fixture.componentInstance.isComprobanteModalOpen()).toBeFalse();
   });
 });

@@ -63,6 +63,7 @@ export class PropertyMovementsPageComponent {
   readonly isSaving = signal(false);
   readonly deletingMovimientoId = signal<number | null>(null);
   readonly isDragOver = signal(false);
+  readonly comprobanteModalUrl = signal<string | null>(null);
 
   readonly propertyError = signal('');
   readonly movimientosError = signal('');
@@ -71,6 +72,7 @@ export class PropertyMovementsPageComponent {
 
   readonly isLoading = computed(() => this.isLoadingProperty() || this.isLoadingMovimientos());
   readonly isEditing = computed(() => this.editingMovimientoId() !== null);
+  readonly isComprobanteModalOpen = computed(() => !!this.comprobanteModalUrl());
 
   constructor() {
     const raw = this.route.snapshot.paramMap.get('id');
@@ -207,7 +209,15 @@ export class PropertyMovementsPageComponent {
   }
 
   viewComprobante(url: string): void {
-    window.open(url, '_blank', 'noopener,noreferrer');
+    if (!url.trim()) {
+      return;
+    }
+
+    this.comprobanteModalUrl.set(url);
+  }
+
+  closeComprobanteModal(): void {
+    this.comprobanteModalUrl.set(null);
   }
 
   deleteMovimiento(movimiento: MovimientoRecord): void {

@@ -170,5 +170,18 @@
         </div>
       </section>
     </main>
+
+    <div
+      *ngIf="comprobanteModalUrl() as comprobanteUrl"
+      class="comprobante-modal-overlay"
+      (click)="closeComprobanteModal()"
+    >
+      <div class="comprobante-modal-content" (click)="$event.stopPropagation()">
+        <button type="button" class="comprobante-modal-close" (click)="closeComprobanteModal()">
+          ✕
+        </button>
+        <img class="comprobante-modal-image" [src]="comprobanteUrl" alt="Comprobante del movimiento" />
+      </div>
+    </div>
   </div>
 </div>
