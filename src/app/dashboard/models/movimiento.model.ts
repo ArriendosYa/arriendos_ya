@@ -23,6 +23,7 @@ export interface MovimientoPayload {
   concepto: string;
   monto: number;
   fecha?: string;
+  estado?: string;
 }
 
 export interface MovimientoListResponse {

@@ -72,6 +72,13 @@
                   <td>$ {{ movimiento.monto | number: '1.0-0' }}</td>
                   <td>
                     <div class="actions">
+                      <button
+                        *ngIf="movimiento.urlComprobante"
+                        type="button"
+                        (click)="viewComprobante(movimiento.urlComprobante!)"
+                      >
+                        Ver Comprobante
+                      </button>
                       <button type="button" (click)="startEdit(movimiento)">Editar</button>
                       <button
                         type="button"

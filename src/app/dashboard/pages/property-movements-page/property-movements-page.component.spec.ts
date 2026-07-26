@@ -29,7 +29,8 @@ const MOVIMIENTOS: MovimientoRecord[] = [
     concepto: 'Arriendo julio',
     monto: 800000,
     fecha: '2026-07-01',
-    estado: 'PAGADO'
+    estado: 'PAGADO',
+    urlComprobante: 'https://storage.example.com/comprobantes/1.pdf'
   }
 ];
 
@@ -164,5 +165,17 @@ describe('PropertyMovementsPageComponent', () => {
     fixture.componentInstance.saveMovimiento();
 
     expect(fixture.componentInstance.formError()).toBe('Error de backend');
+  });
+
+  it('should open comprobante URL in a new tab', () => {
+    const openSpy = spyOn(window, 'open');
+
+    const fixture = TestBed.createComponent(PropertyMovementsPageComponent);
+    fixture.detectChanges();
+
+    const url = 'https://storage.example.com/comprobantes/1.pdf';
+    fixture.componentInstance.viewComprobante(url);
+
+    expect(openSpy).toHaveBeenCalledWith(url, '_blank', 'noopener,noreferrer');
   });
 });

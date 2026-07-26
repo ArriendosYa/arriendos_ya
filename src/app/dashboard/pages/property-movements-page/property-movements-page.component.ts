@@ -206,6 +206,10 @@ export class PropertyMovementsPageComponent {
       });
   }
 
+  viewComprobante(url: string): void {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
   deleteMovimiento(movimiento: MovimientoRecord): void {
     if (!movimiento.id) {
       return;
