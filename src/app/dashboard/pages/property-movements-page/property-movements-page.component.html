@@ -54,7 +54,6 @@
                   <th>Tipo</th>
                   <th>Concepto</th>
                   <th>Monto</th>
-                  <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -71,7 +70,6 @@
                   </td>
                   <td>{{ movimiento.concepto }}</td>
                   <td>$ {{ movimiento.monto | number: '1.0-0' }}</td>
-                  <td>{{ movimiento.estado || '—' }}</td>
                   <td>
                     <div class="actions">
                       <button type="button" (click)="startEdit(movimiento)">Editar</button>
@@ -102,20 +100,11 @@
           <p *ngIf="formError()" class="error-banner">{{ formError() }}</p>
 
           <div class="field-grid">
-            <label class="field">
+            <label class="field field-full">
               <span>Tipo</span>
               <select [ngModel]="formModel().tipo" (ngModelChange)="updateFormField('tipo', $event)">
                 <option *ngFor="let tipo of movimientoTipos" [value]="tipo">{{ tipo }}</option>
               </select>
-            </label>
-
-            <label class="field">
-              <span>Fecha</span>
-              <input
-                type="date"
-                [ngModel]="formModel().fecha"
-                (ngModelChange)="updateFormField('fecha', $event)"
-              />
             </label>
 
             <label class="field field-full">
@@ -128,7 +117,7 @@
               />
             </label>
 
-            <label class="field">
+            <label class="field field-full">
               <span>Monto</span>
               <input
                 type="number"
@@ -138,16 +127,7 @@
                 placeholder="0"
               />
             </label>
-
-            <label class="field">
-              <span>Estado</span>
-              <input
-                type="text"
-                [ngModel]="formModel().estado"
-                (ngModelChange)="updateFormField('estado', $event)"
-                placeholder="Ej: pagado"
-              />
-            </label>
+ 
           </div>
 
           <div

@@ -22,8 +22,7 @@ export interface MovimientoPayload {
   tipo: MovimientoTipo;
   concepto: string;
   monto: number;
-  fecha: string;
-  estado?: string;
+  fecha?: string;
 }
 
 export interface MovimientoListResponse {

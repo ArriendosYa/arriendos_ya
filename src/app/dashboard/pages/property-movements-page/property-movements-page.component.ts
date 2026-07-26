@@ -167,8 +167,8 @@ export class PropertyMovementsPageComponent {
       tipo: current.tipo,
       concepto: current.concepto.trim(),
       monto: Number(current.monto),
-      fecha: current.fecha,
       propiedad: { id: this.propiedadId() },
+      ...(current.fecha ? { fecha: current.fecha } : {}),
       ...(current.estado.trim() ? { estado: current.estado.trim() } : {})
     };
 
@@ -297,10 +297,6 @@ export class PropertyMovementsPageComponent {
 
     if (model.monto === null || Number.isNaN(Number(model.monto)) || Number(model.monto) <= 0) {
       return 'El monto debe ser un número mayor a 0.';
-    }
-
-    if (!model.fecha || Number.isNaN(Date.parse(model.fecha))) {
-      return 'Debes ingresar una fecha válida.';
     }
 
     return '';
