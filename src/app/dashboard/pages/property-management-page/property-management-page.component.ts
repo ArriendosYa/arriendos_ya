@@ -222,7 +222,9 @@ export class PropertyManagementPageComponent {
     this.contactService.listContacts('propietarios').subscribe({
       next: (owners) => this.owners.set(owners),
       error: () => {
-        this.errorMessage.set('No se pudieron cargar los propietarios.');
+        this.errorMessage.set(
+          'No se pudieron cargar los propietarios. Por favor, intenta recargar la página.'
+        );
       }
     });
   }
