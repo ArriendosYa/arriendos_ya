@@ -172,9 +172,10 @@ describe('PropertyMovementsPageComponent', () => {
     fixture.detectChanges();
 
     const url = 'https://storage.example.com/comprobantes/1.jpg';
-    fixture.componentInstance.viewComprobante(url);
+    fixture.componentInstance.viewComprobante(url, 'Comprobante de INGRESO por $800.000 del 2026-07-01');
 
     expect(fixture.componentInstance.comprobanteModalUrl()).toBe(url);
+    expect(fixture.componentInstance.comprobanteModalAlt()).toContain('INGRESO');
     expect(fixture.componentInstance.isComprobanteModalOpen()).toBeTrue();
   });
 
@@ -197,5 +198,6 @@ describe('PropertyMovementsPageComponent', () => {
 
     expect(fixture.componentInstance.comprobanteModalUrl()).toBeNull();
     expect(fixture.componentInstance.isComprobanteModalOpen()).toBeFalse();
+    expect(fixture.componentInstance.movimientosError()).toContain('URL es inválida');
   });
 });

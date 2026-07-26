@@ -75,7 +75,7 @@
                       <button
                         *ngIf="movimiento.urlComprobante"
                         type="button"
-                        (click)="viewComprobante(movimiento.urlComprobante)"
+                        (click)="viewComprobante(movimiento.urlComprobante, buildComprobanteAlt(movimiento))"
                       >
                         Ver Comprobante
                       </button>
@@ -185,7 +185,7 @@
         >
           ✕
         </button>
-        <img class="comprobante-modal-image" [src]="comprobanteUrl" alt="Comprobante del movimiento" />
+        <img class="comprobante-modal-image" [src]="comprobanteUrl" [alt]="comprobanteModalAlt()" />
       </div>
     </div>
   </div>

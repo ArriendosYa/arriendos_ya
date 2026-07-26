@@ -66,6 +66,7 @@ export class PropertyMovementsPageComponent {
   readonly deletingMovimientoId = signal<number | null>(null);
   readonly isDragOver = signal(false);
   readonly comprobanteModalUrl = signal<string | null>(null);
+  readonly comprobanteModalAlt = signal('Comprobante del movimiento');
 
   readonly propertyError = signal('');
   readonly movimientosError = signal('');
@@ -210,17 +211,27 @@ export class PropertyMovementsPageComponent {
       });
   }
 
-  viewComprobante(url: string): void {
+  viewComprobante(url: string, altText?: string): void {
     const safeUrl = this.sanitizer.sanitize(SecurityContext.URL, url.trim());
     if (!safeUrl || safeUrl.startsWith('unsafe:')) {
+      this.movimientosError.set('No se pudo visualizar el comprobante porque su URL es inválida.');
       return;
     }
 
+    this.movimientosError.set('');
     this.comprobanteModalUrl.set(safeUrl);
+    this.comprobanteModalAlt.set(altText?.trim() || 'Comprobante del movimiento');
   }
 
   closeComprobanteModal(): void {
     this.comprobanteModalUrl.set(null);
+    this.comprobanteModalAlt.set('Comprobante del movimiento');
+  }
+
+  buildComprobanteAlt(movimiento: MovimientoRecord): string {
+    const monto = new Intl.NumberFormat('es-CL').format(movimiento.monto);
+    const fecha = movimiento.fecha || 'fecha no informada';
+    return `Comprobante de ${movimiento.tipo} por $${monto} del ${fecha}`;
   }
 
   deleteMovimiento(movimiento: MovimientoRecord): void {
