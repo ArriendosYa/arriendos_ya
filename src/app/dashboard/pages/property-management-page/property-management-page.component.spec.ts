@@ -174,7 +174,18 @@ describe('PropertyManagementPageComponent', () => {
 
     fixture.componentInstance.saveProperty(MOCK_PROPERTIES[0]);
 
-    expect(serviceSpy.updateProperty).toHaveBeenCalledWith(1, MOCK_PROPERTIES[0]);
+    expect(serviceSpy.updateProperty).toHaveBeenCalledWith(1, {
+      id: 1,
+      direccion: 'Av. Providencia 1250, Depto 402',
+      comuna: 'Providencia',
+      ciudad: 'Santiago',
+      region: 'Metropolitana',
+      numeroHabitaciones: 2,
+      numeroBanos: 1,
+      precioArriendo: 950000,
+      disponible: true,
+      propietario: { rut: '12.345.678-5' }
+    });
   });
 
   it('should not save property when owner is missing', () => {
