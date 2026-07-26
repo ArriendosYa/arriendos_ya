@@ -435,6 +435,15 @@
               </label>
 
               <label class="field">
+                <span>Fecha de termino</span>
+                <input
+                  type="date"
+                  [ngModel]="editFormModel().fechaTermino"
+                  (ngModelChange)="updateEditField('fechaTermino', $event)"
+                  />
+              </label>
+
+              <label class="field">
                 <span>Día de pago</span>
                 <select
                   [ngModel]="editFormModel().paymentDay"

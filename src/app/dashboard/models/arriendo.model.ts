@@ -22,6 +22,7 @@ export interface ArriendoPayload {
   propiedad: { id: number };
   arrendatario: { rut: string };
   fechaInicio: string;
+  fechaTermino: string;
   diaPago: DiaPago;
   reajusteSemestral: number;
   activo: boolean;

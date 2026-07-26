@@ -50,6 +50,7 @@ interface AssignmentFormValue {
 interface EditArriendoFormValue {
   arrendatarioRut: string;
   fechaInicio: string;
+  fechaTermino: string;
   paymentDay: number | null;
   semiannualAdjustment: number | null;
 }
@@ -68,6 +69,7 @@ const EMPTY_FORM: AssignmentFormValue = {
 const EMPTY_EDIT_FORM: EditArriendoFormValue = {
   arrendatarioRut: '',
   fechaInicio: '',
+  fechaTermino: '',
   paymentDay: null,
   semiannualAdjustment: null
 };
@@ -305,6 +307,7 @@ export class TenantAssignmentPageComponent implements OnInit {
       property.id,
       tenant.id,
       values.startDate,
+      values.endDate,
       validationResult.diaPago,
       validationResult.adjustment
     );
@@ -407,6 +410,7 @@ export class TenantAssignmentPageComponent implements OnInit {
     this.editFormModel.set({
       arrendatarioRut: arriendo.arrendatario.rut,
       fechaInicio: arriendo.fechaInicio,
+      fechaTermino: arriendo.fechaTermino ?? '',
       paymentDay: DAY_BY_DIA_PAGO[arriendo.diaPago] ?? null,
       semiannualAdjustment: arriendo.reajusteSemestral
     });
@@ -449,6 +453,7 @@ export class TenantAssignmentPageComponent implements OnInit {
       propiedad: { id: arriendo.propiedad.id },
       arrendatario: { rut: form.arrendatarioRut },
       fechaInicio: form.fechaInicio,
+      fechaTermino: form.fechaTermino,
       diaPago,
       reajusteSemestral: form.semiannualAdjustment,
       activo: arriendo.activo
@@ -573,6 +578,7 @@ export class TenantAssignmentPageComponent implements OnInit {
     propiedadId: number,
     arrendatarioRut: string,
     fechaInicio: string,
+    fechaTermino: string,
     diaPago: DiaPago,
     reajusteSemestral: number
   ): ArriendoPayload {
@@ -580,6 +586,7 @@ export class TenantAssignmentPageComponent implements OnInit {
       propiedad: { id: propiedadId },
       arrendatario: { rut: arrendatarioRut },
       fechaInicio,
+      fechaTermino,
       diaPago,
       reajusteSemestral,
       activo: true
