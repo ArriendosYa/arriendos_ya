@@ -17,6 +17,19 @@ interface TenantRecord {
   phone: string;
 }
 
+interface OwnerRecord {
+  rut: string;
+  fullName: string;
+}
+
+interface ArriendoRow {
+  arriendo: Arriendo;
+  propertyAddress: string;
+  ownerName: string;
+  ownerRut: string;
+  tenantName: string;
+}
+
 interface SavedAssignmentSummary {
   arriendo: Arriendo;
   propertyAddress: string;
@@ -34,6 +47,14 @@ interface AssignmentFormValue {
   semiannualAdjustment: number | null;
 }
 
+interface EditArriendoFormValue {
+  arrendatarioRut: string;
+  fechaInicio: string;
+  fechaTermino: string;
+  paymentDay: number | null;
+  semiannualAdjustment: number | null;
+}
+
 const EMPTY_FORM: AssignmentFormValue = {
   propertyId: null,
   tenantId: '',
@@ -45,6 +66,16 @@ const EMPTY_FORM: AssignmentFormValue = {
   semiannualAdjustment: null
 };
 
+const EMPTY_EDIT_FORM: EditArriendoFormValue = {
+  arrendatarioRut: '',
+  fechaInicio: '',
+  fechaTermino: '',
+  paymentDay: null,
+  semiannualAdjustment: null
+};
+
+const ARRIENDOS_PAGE_SIZE = 5;
+
 const DIA_PAGO_BY_DAY: Partial<Record<number, DiaPago>> = {
   5: DiaPago.DIA_5,
   10: DiaPago.DIA_10,
@@ -53,6 +84,16 @@ const DIA_PAGO_BY_DAY: Partial<Record<number, DiaPago>> = {
   25: DiaPago.DIA_25,
   30: DiaPago.DIA_30
 };
+
+const DAY_BY_DIA_PAGO: Partial<Record<DiaPago, number>> = {
+  [DiaPago.DIA_5]: 5,
+  [DiaPago.DIA_10]: 10,
+  [DiaPago.DIA_15]: 15,
+  [DiaPago.DIA_20]: 20,
+  [DiaPago.DIA_25]: 25,
+  [DiaPago.DIA_30]: 30
+};
+
 const RUT_PATTERN = /^\d{7,8}-[\dkK]$/;
 
 @Component({
@@ -67,9 +108,16 @@ export class TenantAssignmentPageComponent implements OnInit {
   private readonly contactService = inject(ContactManagementService);
   private readonly arriendosService = inject(ArriendosService);
 
+  // ── Shared state ─────────────────────────────────────────────────────────
   readonly allProperties = signal<PropertyRecord[]>([]);
   readonly allTenants = signal<TenantRecord[]>([]);
+  readonly allOwners = signal<OwnerRecord[]>([]);
   readonly savedArriendos = signal<Arriendo[]>([]);
+
+  // ── Tab control ──────────────────────────────────────────────────────────
+  readonly activeTab = signal<'asignar' | 'arriendos'>('asignar');
+
+  // ── Tab 1: Assignment form state ─────────────────────────────────────────
   readonly tenantQuery = signal('');
   readonly formModel = signal<AssignmentFormValue>({ ...EMPTY_FORM });
   readonly feedbackMessage = signal('');
@@ -119,6 +167,83 @@ export class TenantAssignmentPageComponent implements OnInit {
     return !!values.startDate && !!values.endDate && values.endDate < values.startDate;
   });
 
+  // ── Tab 2: Arriendos list state ───────────────────────────────────────────
+  readonly arriendosFilterTenant = signal('');
+  readonly arriendosFilterOwner = signal('');
+  readonly arriendosPage = signal(1);
+  readonly listFeedbackMessage = signal('');
+  readonly listFeedbackType = signal<'success' | 'error' | 'info'>('info');
+
+  // Edit dialog state
+  readonly editingArriendo = signal<Arriendo | null>(null);
+  readonly editFormModel = signal<EditArriendoFormValue>({ ...EMPTY_EDIT_FORM });
+  readonly isUpdating = signal(false);
+  readonly showEditConfirm = signal(false);
+
+  // Finalize dialog state
+  readonly finalizingArriendo = signal<Arriendo | null>(null);
+  readonly finalizeDate = signal('');
+  readonly isFinalizing = signal(false);
+  readonly showFinalizeConfirm = signal(false);
+
+  readonly arriendosRows = computed<ArriendoRow[]>(() =>
+    this.savedArriendos().map((arriendo) => {
+      const property = this.allProperties().find((p) => p.id === arriendo.propiedad.id);
+      const tenant = this.allTenants().find((t) => t.id === arriendo.arrendatario.rut);
+      const owner = property
+        ? this.allOwners().find((o) => o.rut === property.propietario.rut)
+        : null;
+
+      return {
+        arriendo,
+        propertyAddress: property?.direccion ?? `Propiedad #${arriendo.propiedad.id}`,
+        ownerName: owner?.fullName ?? property?.propietario.rut ?? '-',
+        ownerRut: property?.propietario.rut ?? '-',
+        tenantName: tenant?.fullName ?? arriendo.arrendatario.rut
+      };
+    })
+  );
+
+  readonly filteredArriendosRows = computed(() => {
+    const tenantFilter = this.arriendosFilterTenant().trim().toLowerCase();
+    const ownerFilter = this.arriendosFilterOwner().trim().toLowerCase();
+
+    return this.arriendosRows().filter((row) => {
+      if (tenantFilter) {
+        const matches = [row.arriendo.arrendatario.rut, row.tenantName].some((field) =>
+          field.toLowerCase().includes(tenantFilter)
+        );
+        if (!matches) return false;
+      }
+      if (ownerFilter) {
+        const matches = [row.ownerRut, row.ownerName].some((field) =>
+          field.toLowerCase().includes(ownerFilter)
+        );
+        if (!matches) return false;
+      }
+      return true;
+    });
+  });
+
+  readonly arriendosTotalPages = computed(() =>
+    Math.max(1, Math.ceil(this.filteredArriendosRows().length / ARRIENDOS_PAGE_SIZE))
+  );
+
+  readonly pagedArriendosRows = computed(() => {
+    const page = this.arriendosPage();
+    const start = (page - 1) * ARRIENDOS_PAGE_SIZE;
+    return this.filteredArriendosRows().slice(start, start + ARRIENDOS_PAGE_SIZE);
+  });
+
+  readonly arriendosRangeStart = computed(() => {
+    if (!this.filteredArriendosRows().length) return 0;
+    return (this.arriendosPage() - 1) * ARRIENDOS_PAGE_SIZE + 1;
+  });
+
+  readonly arriendosRangeEnd = computed(() =>
+    Math.min(this.arriendosPage() * ARRIENDOS_PAGE_SIZE, this.filteredArriendosRows().length)
+  );
+
   ngOnInit(): void {
     this.loadAssignments();
 
@@ -132,6 +257,15 @@ export class TenantAssignmentPageComponent implements OnInit {
           id: contact.rut,
           fullName: `${contact.nombre} ${contact.apellido}`,
           phone: contact.telefono
+        }))
+      );
+    });
+
+    this.contactService.listContacts('propietarios').subscribe((contacts) => {
+      this.allOwners.set(
+        contacts.map((contact) => ({
+          rut: contact.rut,
+          fullName: `${contact.nombre} ${contact.apellido}`
         }))
       );
     });
@@ -173,6 +307,7 @@ export class TenantAssignmentPageComponent implements OnInit {
       property.id,
       tenant.id,
       values.startDate,
+      values.endDate,
       validationResult.diaPago,
       validationResult.adjustment
     );
@@ -246,6 +381,156 @@ export class TenantAssignmentPageComponent implements OnInit {
     form.resetForm({ ...EMPTY_FORM });
   }
 
+  // ── Tab control ──────────────────────────────────────────────────────────
+
+  setActiveTab(tab: 'asignar' | 'arriendos'): void {
+    this.activeTab.set(tab);
+  }
+
+  // ── Tab 2: Arriendos list methods ─────────────────────────────────────────
+
+  arriendosPreviousPage(): void {
+    this.arriendosPage.update((p) => Math.max(1, p - 1));
+  }
+
+  arriendosNextPage(): void {
+    this.arriendosPage.update((p) => Math.min(this.arriendosTotalPages(), p + 1));
+  }
+
+  resetArriendosFilters(): void {
+    this.arriendosFilterTenant.set('');
+    this.arriendosFilterOwner.set('');
+    this.arriendosPage.set(1);
+  }
+
+  // ── Edit dialog ───────────────────────────────────────────────────────────
+
+  openEditDialog(arriendo: Arriendo): void {
+    this.editingArriendo.set(arriendo);
+    this.editFormModel.set({
+      arrendatarioRut: arriendo.arrendatario.rut,
+      fechaInicio: arriendo.fechaInicio,
+      fechaTermino: arriendo.fechaTermino ?? '',
+      paymentDay: DAY_BY_DIA_PAGO[arriendo.diaPago] ?? null,
+      semiannualAdjustment: arriendo.reajusteSemestral
+    });
+    this.showEditConfirm.set(false);
+    this.listFeedbackMessage.set('');
+  }
+
+  closeEditDialog(): void {
+    this.editingArriendo.set(null);
+    this.showEditConfirm.set(false);
+  }
+
+  updateEditField<K extends keyof EditArriendoFormValue>(
+    field: K,
+    value: EditArriendoFormValue[K]
+  ): void {
+    this.editFormModel.update((current) => ({ ...current, [field]: value }));
+  }
+
+  requestEditConfirm(): void {
+    const form = this.editFormModel();
+    const diaPago = this.mapDiaPago(form.paymentDay);
+    if (!diaPago || form.semiannualAdjustment === null || !form.fechaInicio || !form.arrendatarioRut) {
+      this.listFeedbackType.set('error');
+      this.listFeedbackMessage.set('Revisa los campos del formulario antes de continuar.');
+      return;
+    }
+    this.showEditConfirm.set(true);
+  }
+
+  confirmEdit(): void {
+    const arriendo = this.editingArriendo();
+    if (!arriendo?.id) return;
+
+    const form = this.editFormModel();
+    const diaPago = this.mapDiaPago(form.paymentDay);
+    if (!diaPago || form.semiannualAdjustment === null) return;
+
+    const payload: ArriendoPayload = {
+      propiedad: { id: arriendo.propiedad.id },
+      arrendatario: { rut: form.arrendatarioRut },
+      fechaInicio: form.fechaInicio,
+      fechaTermino: form.fechaTermino,
+      diaPago,
+      reajusteSemestral: form.semiannualAdjustment,
+      activo: arriendo.activo
+    };
+
+    this.isUpdating.set(true);
+    this.arriendosService.update(arriendo.id, payload).subscribe({
+      next: (updated) => {
+        this.savedArriendos.update((arriendos) =>
+          arriendos.map((item) => (item.id === updated.id ? updated : item))
+        );
+        this.isUpdating.set(false);
+        this.editingArriendo.set(null);
+        this.showEditConfirm.set(false);
+        this.listFeedbackType.set('success');
+        this.listFeedbackMessage.set(`✓ Arriendo #${updated.id} modificado correctamente.`);
+      },
+      error: (err: unknown) => {
+        this.isUpdating.set(false);
+        this.showEditConfirm.set(false);
+        this.listFeedbackType.set('error');
+        this.listFeedbackMessage.set(this.buildApiErrorMessage(err));
+      }
+    });
+  }
+
+  // ── Finalize dialog ───────────────────────────────────────────────────────
+
+  openFinalizeDialog(arriendo: Arriendo): void {
+    this.finalizingArriendo.set(arriendo);
+    this.finalizeDate.set('');
+    this.showFinalizeConfirm.set(false);
+    this.listFeedbackMessage.set('');
+  }
+
+  closeFinalizeDialog(): void {
+    this.finalizingArriendo.set(null);
+    this.showFinalizeConfirm.set(false);
+  }
+
+  requestFinalizeConfirm(): void {
+    if (!this.finalizeDate()) {
+      this.listFeedbackType.set('error');
+      this.listFeedbackMessage.set('Debes ingresar una fecha de término para finalizar el arriendo.');
+      return;
+    }
+    this.showFinalizeConfirm.set(true);
+  }
+
+  confirmFinalize(): void {
+    const arriendo = this.finalizingArriendo();
+    const fecha = this.finalizeDate();
+    if (!arriendo?.id || !fecha) return;
+
+    this.isFinalizing.set(true);
+    this.arriendosService.finalizar(arriendo.id, fecha).subscribe({
+      next: () => {
+        this.savedArriendos.update((arriendos) =>
+          arriendos.map((item) =>
+            item.id === arriendo.id ? { ...item, activo: false, fechaTermino: fecha } : item
+          )
+        );
+        this.isFinalizing.set(false);
+        this.finalizingArriendo.set(null);
+        this.showFinalizeConfirm.set(false);
+        this.listFeedbackType.set('success');
+        this.listFeedbackMessage.set(`✓ Arriendo #${arriendo.id} finalizado correctamente.`);
+      },
+      error: (err: unknown) => {
+        this.isFinalizing.set(false);
+        this.showFinalizeConfirm.set(false);
+        this.listFeedbackType.set('error');
+        this.listFeedbackMessage.set(this.buildApiErrorMessage(err));
+      }
+    });
+  }
+
   private loadAssignments(): void {
     this.arriendosService.list().subscribe({
       next: (arriendos) => {
@@ -293,6 +578,7 @@ export class TenantAssignmentPageComponent implements OnInit {
     propiedadId: number,
     arrendatarioRut: string,
     fechaInicio: string,
+    fechaTermino: string,
     diaPago: DiaPago,
     reajusteSemestral: number
   ): ArriendoPayload {
@@ -300,6 +586,7 @@ export class TenantAssignmentPageComponent implements OnInit {
       propiedad: { id: propiedadId },
       arrendatario: { rut: arrendatarioRut },
       fechaInicio,
+      fechaTermino,
       diaPago,
       reajusteSemestral,
       activo: true
