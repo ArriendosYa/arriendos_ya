@@ -2,7 +2,11 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { MovimientoPayload, MovimientoRecord } from '../models/movimiento.model';
+import {
+  MovimientoListResponse,
+  MovimientoPayload,
+  MovimientoRecord
+} from '../models/movimiento.model';
 
 @Injectable({
   providedIn: 'root'
@@ -11,8 +15,8 @@ export class MovimientoService {
   private readonly http = inject(HttpClient);
   private readonly apiBasePath = `${environment.apiBasePath}/movimientos`;
 
-  listByPropiedad(propiedadId: number): Observable<MovimientoRecord[]> {
-    return this.http.get<MovimientoRecord[]>(`${this.apiBasePath}/propiedad/${propiedadId}`);
+  listByPropiedad(propiedadId: number): Observable<MovimientoListResponse> {
+    return this.http.get<MovimientoListResponse>(`${this.apiBasePath}/propiedad/${propiedadId}`);
   }
 
   createConComprobante(

@@ -2,7 +2,7 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, provideRouter } from '@angular/router';
 import { of, throwError } from 'rxjs';
-import { MovimientoRecord } from '../../models/movimiento.model';
+import { MovimientoListResponse, MovimientoRecord } from '../../models/movimiento.model';
 import { PropertyRecord } from '../../models/property.model';
 import { MovimientoService } from '../../services/movimiento.service';
 import { PropertyManagementService } from '../../services/property-management.service';
@@ -33,6 +33,13 @@ const MOVIMIENTOS: MovimientoRecord[] = [
   }
 ];
 
+const MOVIMIENTOS_RESPONSE: MovimientoListResponse = {
+  movimientos: MOVIMIENTOS,
+  totalIngresos: 800000,
+  totalEgresos: 120000,
+  saldo: 680000
+};
+
 describe('PropertyMovementsPageComponent', () => {
   const propertyServiceSpy = jasmine.createSpyObj<PropertyManagementService>('PropertyManagementService', [
     'getProperty'
@@ -54,7 +61,7 @@ describe('PropertyMovementsPageComponent', () => {
     movimientoServiceSpy.deleteMovimiento.calls.reset();
 
     propertyServiceSpy.getProperty.and.returnValue(of(PROPERTY));
-    movimientoServiceSpy.listByPropiedad.and.returnValue(of(MOVIMIENTOS));
+    movimientoServiceSpy.listByPropiedad.and.returnValue(of(MOVIMIENTOS_RESPONSE));
     movimientoServiceSpy.createConComprobante.and.returnValue(of(MOVIMIENTOS[0]));
     movimientoServiceSpy.updateMovimiento.and.returnValue(of(MOVIMIENTOS[0]));
     movimientoServiceSpy.updateComprobante.and.returnValue(of(MOVIMIENTOS[0]));
@@ -88,6 +95,9 @@ describe('PropertyMovementsPageComponent', () => {
     expect(propertyServiceSpy.getProperty).toHaveBeenCalledWith(10);
     expect(movimientoServiceSpy.listByPropiedad).toHaveBeenCalledWith(10);
     expect(fixture.componentInstance.movimientos().length).toBe(1);
+    expect(fixture.componentInstance.totalIngresos()).toBe(800000);
+    expect(fixture.componentInstance.totalEgresos()).toBe(120000);
+    expect(fixture.componentInstance.saldo()).toBe(680000);
   });
 
   it('should validate form before saving', () => {

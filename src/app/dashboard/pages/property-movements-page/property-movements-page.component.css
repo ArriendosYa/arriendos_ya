@@ -101,6 +101,34 @@
   color: #7b8298;
 }
 
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.summary-card {
+  background: #ffffff;
+  border: 1px solid #e7e9f2;
+  border-radius: 1rem;
+  padding: 1rem;
+  box-shadow: 0 18px 40px rgba(31, 41, 72, 0.06);
+}
+
+.summary-card p {
+  margin: 0;
+  color: #7b8298;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.summary-card h3 {
+  margin: 0.4rem 0 0;
+  font-size: 1.35rem;
+  color: #20283f;
+}
+
 .content-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.4fr) minmax(320px, 1fr);
@@ -272,6 +300,10 @@ th {
 }
 
 @media (max-width: 1200px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
   .content-grid {
     grid-template-columns: 1fr;
   }

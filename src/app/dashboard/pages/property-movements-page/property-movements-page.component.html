@@ -22,6 +22,21 @@
 
       <div *ngIf="isLoading()" class="loading-state">Cargando movimientos...</div>
 
+      <section *ngIf="!isLoading()" class="summary-grid">
+        <article class="summary-card">
+          <p>Total Ingresos</p>
+          <h3>$ {{ totalIngresos() | number: '1.0-0' }}</h3>
+        </article>
+        <article class="summary-card">
+          <p>Total Egresos</p>
+          <h3>$ {{ totalEgresos() | number: '1.0-0' }}</h3>
+        </article>
+        <article class="summary-card">
+          <p>Saldo</p>
+          <h3>$ {{ saldo() | number: '1.0-0' }}</h3>
+        </article>
+      </section>
+
       <section *ngIf="!isLoading()" class="content-grid">
         <div class="table-card">
           <div class="table-header">

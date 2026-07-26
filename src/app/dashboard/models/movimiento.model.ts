@@ -12,7 +12,7 @@ export interface MovimientoRecord {
   monto: number;
   fecha: string;
   estado?: string;
-  comprobanteUrl?: string;
+  urlComprobante?: string;
 }
 
 export interface MovimientoPayload {
@@ -24,4 +24,11 @@ export interface MovimientoPayload {
   monto: number;
   fecha: string;
   estado?: string;
+}
+
+export interface MovimientoListResponse {
+  movimientos: MovimientoRecord[];
+  totalIngresos: number;
+  totalEgresos: number;
+  saldo: number;
 }

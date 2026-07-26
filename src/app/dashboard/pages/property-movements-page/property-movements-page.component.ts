@@ -6,6 +6,7 @@ import { finalize, of, switchMap } from 'rxjs';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { TopbarComponent } from '../../components/topbar/topbar.component';
 import {
+  MovimientoListResponse,
   MOVIMIENTO_TIPOS,
   MovimientoPayload,
   MovimientoRecord,
@@ -53,6 +54,9 @@ export class PropertyMovementsPageComponent {
   readonly formModel = signal<MovimientoFormModel>({ ...EMPTY_MOVIMIENTO_FORM });
   readonly editingMovimientoId = signal<number | null>(null);
   readonly selectedFile = signal<File | null>(null);
+  readonly totalIngresos = signal(0);
+  readonly totalEgresos = signal(0);
+  readonly saldo = signal(0);
 
   readonly isLoadingProperty = signal(false);
   readonly isLoadingMovimientos = signal(false);
@@ -266,13 +270,20 @@ export class PropertyMovementsPageComponent {
       .listByPropiedad(propiedadId)
       .pipe(finalize(() => this.isLoadingMovimientos.set(false)))
       .subscribe({
-        next: (movimientos) => this.movimientos.set(movimientos),
+        next: (response) => this.applyMovimientosResponse(response),
         error: (error) => {
           this.movimientosError.set(
             this.extractErrorMessage(error, 'No se pudieron cargar los movimientos.')
           );
         }
       });
+  }
+
+  private applyMovimientosResponse(response: MovimientoListResponse): void {
+    this.movimientos.set(response.movimientos ?? []);
+    this.totalIngresos.set(response.totalIngresos ?? 0);
+    this.totalEgresos.set(response.totalEgresos ?? 0);
+    this.saldo.set(response.saldo ?? 0);
   }
 
   private validateForm(model: MovimientoFormModel): string {
