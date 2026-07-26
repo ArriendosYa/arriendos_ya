@@ -36,6 +36,13 @@ const MOCK_CONTACT: ContactRecord = {
   telefono: '+56 9 8512 4491'
 };
 
+const MOCK_OWNER_CONTACT: ContactRecord = {
+  rut: '12.345.678-5',
+  nombre: 'Pedro',
+  apellido: 'Soto',
+  telefono: '+56 9 1234 5678'
+};
+
 const MOCK_ARRENDAMIENTO: Arriendo = {
   id: 25,
   propiedad: { id: 4 },
@@ -72,10 +79,13 @@ describe('TenantAssignmentPageComponent', () => {
     arriendosServiceSpy.list.calls.reset();
     arriendosServiceSpy.create.calls.reset();
     arriendosServiceSpy.update.calls.reset();
+    arriendosServiceSpy.finalizar.calls.reset();
 
     propertyServiceSpy.listProperties.and.returnValue(of([MOCK_AVAILABLE_PROPERTY]));
     propertyServiceSpy.updateProperty.and.returnValue(of(MOCK_ASSIGNED_PROPERTY));
-    contactServiceSpy.listContacts.and.returnValue(of([MOCK_CONTACT]));
+    contactServiceSpy.listContacts.and.callFake((type: string) =>
+      type === 'arrendatarios' ? of([MOCK_CONTACT]) : of([MOCK_OWNER_CONTACT])
+    );
     arriendosServiceSpy.list.and.returnValue(of([]));
 
     await TestBed.configureTestingModule({
@@ -259,5 +269,222 @@ describe('TenantAssignmentPageComponent', () => {
 
     expect(fixture.componentInstance.formModel().propertyId).toBeNull();
     expect(fixture.componentInstance.feedbackMessage()).toContain('Formulario reiniciado');
+  });
+
+  // ── Tab 2: Arriendos list ───────────────────────────────────────────────
+
+  it('should switch to the arriendos tab', () => {
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.setActiveTab('arriendos');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Listado de arriendos');
+    expect(compiled.textContent).toContain('Filtros');
+  });
+
+  it('should display arriendos in the list tab', () => {
+    arriendosServiceSpy.list.and.returnValue(of([MOCK_ARRENDAMIENTO]));
+
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.setActiveTab('arriendos');
+    fixture.detectChanges();
+
+    const compiled = fixture.nativeElement as HTMLElement;
+    expect(compiled.textContent).toContain('Irarrázaval 2110, Depto 1203');
+    expect(compiled.textContent).toContain('Camila Torres');
+  });
+
+  it('should filter arriendos by tenant name', () => {
+    const arriendo2: Arriendo = {
+      ...MOCK_ARRENDAMIENTO,
+      id: 99,
+      arrendatario: { rut: '99999999-9' }
+    };
+    arriendosServiceSpy.list.and.returnValue(of([MOCK_ARRENDAMIENTO, arriendo2]));
+
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.arriendosFilterTenant.set('camila');
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.filteredArriendosRows().length).toBe(1);
+    expect(fixture.componentInstance.filteredArriendosRows()[0].arriendo.arrendatario.rut).toBe('12345678-9');
+  });
+
+  it('should filter arriendos by owner name', () => {
+    arriendosServiceSpy.list.and.returnValue(of([MOCK_ARRENDAMIENTO]));
+
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.arriendosFilterOwner.set('pedro');
+    expect(fixture.componentInstance.filteredArriendosRows().length).toBe(1);
+
+    fixture.componentInstance.arriendosFilterOwner.set('XXXXXX');
+    expect(fixture.componentInstance.filteredArriendosRows().length).toBe(0);
+  });
+
+  it('should open and close the edit dialog', () => {
+    arriendosServiceSpy.list.and.returnValue(of([MOCK_ARRENDAMIENTO]));
+
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.openEditDialog(MOCK_ARRENDAMIENTO);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.editingArriendo()).toEqual(MOCK_ARRENDAMIENTO);
+    expect(fixture.componentInstance.editFormModel().fechaInicio).toBe('2026-07-01');
+    expect(fixture.componentInstance.editFormModel().paymentDay).toBe(5);
+
+    fixture.componentInstance.closeEditDialog();
+    expect(fixture.componentInstance.editingArriendo()).toBeNull();
+  });
+
+  it('should call update service when confirming edit', () => {
+    const updatedArriendo: Arriendo = { ...MOCK_ARRENDAMIENTO, reajusteSemestral: 5 };
+    arriendosServiceSpy.list.and.returnValue(of([MOCK_ARRENDAMIENTO]));
+    arriendosServiceSpy.update.and.returnValue(of(updatedArriendo));
+
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.openEditDialog(MOCK_ARRENDAMIENTO);
+    fixture.componentInstance.updateEditField('semiannualAdjustment', 5);
+    fixture.componentInstance.requestEditConfirm();
+    fixture.componentInstance.confirmEdit();
+
+    expect(arriendosServiceSpy.update).toHaveBeenCalledWith(25, jasmine.objectContaining({
+      reajusteSemestral: 5
+    }));
+    expect(fixture.componentInstance.editingArriendo()).toBeNull();
+    expect(fixture.componentInstance.listFeedbackType()).toBe('success');
+  });
+
+  it('should show error when edit API call fails', () => {
+    arriendosServiceSpy.list.and.returnValue(of([MOCK_ARRENDAMIENTO]));
+    arriendosServiceSpy.update.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 500 }))
+    );
+
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.openEditDialog(MOCK_ARRENDAMIENTO);
+    fixture.componentInstance.requestEditConfirm();
+    fixture.componentInstance.confirmEdit();
+
+    expect(fixture.componentInstance.listFeedbackType()).toBe('error');
+    expect(fixture.componentInstance.listFeedbackMessage()).toContain('servidor');
+  });
+
+  it('should open and close the finalize dialog', () => {
+    arriendosServiceSpy.list.and.returnValue(of([MOCK_ARRENDAMIENTO]));
+
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.openFinalizeDialog(MOCK_ARRENDAMIENTO);
+    expect(fixture.componentInstance.finalizingArriendo()).toEqual(MOCK_ARRENDAMIENTO);
+
+    fixture.componentInstance.closeFinalizeDialog();
+    expect(fixture.componentInstance.finalizingArriendo()).toBeNull();
+  });
+
+  it('should call finalizar service when confirming finalize', () => {
+    arriendosServiceSpy.list.and.returnValue(of([MOCK_ARRENDAMIENTO]));
+    arriendosServiceSpy.finalizar.and.returnValue(of(void 0));
+
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.openFinalizeDialog(MOCK_ARRENDAMIENTO);
+    fixture.componentInstance.finalizeDate.set('2026-12-31');
+    fixture.componentInstance.requestFinalizeConfirm();
+    fixture.componentInstance.confirmFinalize();
+
+    expect(arriendosServiceSpy.finalizar).toHaveBeenCalledWith(25, '2026-12-31');
+    expect(fixture.componentInstance.finalizingArriendo()).toBeNull();
+    expect(fixture.componentInstance.listFeedbackType()).toBe('success');
+
+    const updated = fixture.componentInstance.savedArriendos().find((a) => a.id === 25);
+    expect(updated?.activo).toBeFalse();
+    expect(updated?.fechaTermino).toBe('2026-12-31');
+  });
+
+  it('should not call finalizar when no date is provided', () => {
+    arriendosServiceSpy.list.and.returnValue(of([MOCK_ARRENDAMIENTO]));
+
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.openFinalizeDialog(MOCK_ARRENDAMIENTO);
+    fixture.componentInstance.finalizeDate.set('');
+    fixture.componentInstance.requestFinalizeConfirm();
+
+    expect(fixture.componentInstance.showFinalizeConfirm()).toBeFalse();
+    expect(arriendosServiceSpy.finalizar).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.listFeedbackType()).toBe('error');
+  });
+
+  it('should show error when finalizar API call fails', () => {
+    arriendosServiceSpy.list.and.returnValue(of([MOCK_ARRENDAMIENTO]));
+    arriendosServiceSpy.finalizar.and.returnValue(
+      throwError(() => new HttpErrorResponse({ status: 404 }))
+    );
+
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.openFinalizeDialog(MOCK_ARRENDAMIENTO);
+    fixture.componentInstance.finalizeDate.set('2026-12-31');
+    fixture.componentInstance.requestFinalizeConfirm();
+    fixture.componentInstance.confirmFinalize();
+
+    expect(fixture.componentInstance.listFeedbackType()).toBe('error');
+    expect(fixture.componentInstance.listFeedbackMessage()).toContain('recurso');
+  });
+
+  it('should reset filters and page', () => {
+    arriendosServiceSpy.list.and.returnValue(of([MOCK_ARRENDAMIENTO]));
+
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.arriendosFilterTenant.set('test');
+    fixture.componentInstance.arriendosFilterOwner.set('owner');
+    fixture.componentInstance.arriendosPage.set(3);
+
+    fixture.componentInstance.resetArriendosFilters();
+
+    expect(fixture.componentInstance.arriendosFilterTenant()).toBe('');
+    expect(fixture.componentInstance.arriendosFilterOwner()).toBe('');
+    expect(fixture.componentInstance.arriendosPage()).toBe(1);
+  });
+
+  it('should paginate arriendos rows correctly', () => {
+    const arriendos: Arriendo[] = Array.from({ length: 7 }, (_, i) => ({
+      ...MOCK_ARRENDAMIENTO,
+      id: i + 1
+    }));
+    arriendosServiceSpy.list.and.returnValue(of(arriendos));
+
+    const fixture = TestBed.createComponent(TenantAssignmentPageComponent);
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.pagedArriendosRows().length).toBe(5);
+    expect(fixture.componentInstance.arriendosTotalPages()).toBe(2);
+
+    fixture.componentInstance.arriendosNextPage();
+    expect(fixture.componentInstance.pagedArriendosRows().length).toBe(2);
+
+    fixture.componentInstance.arriendosPreviousPage();
+    expect(fixture.componentInstance.pagedArriendosRows().length).toBe(5);
   });
 });

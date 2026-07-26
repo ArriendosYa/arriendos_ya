@@ -10,13 +10,34 @@
           <p class="eyebrow">Gestión de contratos</p>
           <h1>Asignar arrendatario a propiedad</h1>
           <p class="hero-copy">
-            Vincula una propiedad disponible con un arrendatario registrado y define condiciones
-            contractuales.
+            Vincula una propiedad disponible con un arrendatario registrado y administra los
+            arriendos existentes.
           </p>
         </div>
       </section>
 
-      <form #assignmentForm="ngForm" class="content-grid" novalidate>
+      <!-- Tab navigation -->
+      <section class="tab-group">
+        <button
+          type="button"
+          class="tab-button"
+          [class.active]="activeTab() === 'asignar'"
+          (click)="setActiveTab('asignar')"
+        >
+          Asignar arrendatario
+        </button>
+        <button
+          type="button"
+          class="tab-button"
+          [class.active]="activeTab() === 'arriendos'"
+          (click)="setActiveTab('arriendos')"
+        >
+          Arriendos
+        </button>
+      </section>
+
+      <!-- Tab 1: Assignment form -->
+      <form *ngIf="activeTab() === 'asignar'" #assignmentForm="ngForm" class="content-grid" novalidate>
         <section class="assignment-card">
           <article class="section-block">
             <h2>Selección de entidades</h2>
@@ -271,6 +292,249 @@
           </section>
         </aside>
       </form>
+
+      <!-- Tab 2: Arriendos list -->
+      <div *ngIf="activeTab() === 'arriendos'" class="arriendos-tab">
+
+        <!-- List feedback -->
+        <p
+          *ngIf="listFeedbackMessage()"
+          class="feedback"
+          [class.feedback-success]="listFeedbackType() === 'success'"
+          [class.feedback-error]="listFeedbackType() === 'error'"
+        >
+          {{ listFeedbackMessage() }}
+        </p>
+
+        <!-- Filters -->
+        <section class="filters-card">
+          <h2>Filtros</h2>
+          <div class="filters-grid">
+            <label class="field">
+              <span>Arrendatario (nombre o RUT)</span>
+              <input
+                type="search"
+                placeholder="Buscar por arrendatario…"
+                [ngModel]="arriendosFilterTenant()"
+                (ngModelChange)="arriendosFilterTenant.set($event); arriendosPage.set(1)"
+              />
+            </label>
+            <label class="field">
+              <span>Propietario (nombre o RUT)</span>
+              <input
+                type="search"
+                placeholder="Buscar por propietario…"
+                [ngModel]="arriendosFilterOwner()"
+                (ngModelChange)="arriendosFilterOwner.set($event); arriendosPage.set(1)"
+              />
+            </label>
+            <button type="button" class="ghost-button filter-clear-btn" (click)="resetArriendosFilters()">
+              Limpiar filtros
+            </button>
+          </div>
+        </section>
+
+        <!-- Table -->
+        <section class="table-card">
+          <header class="card-header">
+            <h2>Listado de arriendos</h2>
+            <span>{{ filteredArriendosRows().length }} registros</span>
+          </header>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Propiedad</th>
+                  <th>Propietario</th>
+                  <th>Arrendatario</th>
+                  <th>Inicio</th>
+                  <th>Término</th>
+                  <th>Estado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let row of pagedArriendosRows()">
+                  <td>{{ row.arriendo.id }}</td>
+                  <td>{{ row.propertyAddress }}</td>
+                  <td>{{ row.ownerName }}</td>
+                  <td>{{ row.tenantName }}</td>
+                  <td>{{ row.arriendo.fechaInicio }}</td>
+                  <td>{{ row.arriendo.fechaTermino || '—' }}</td>
+                  <td>
+                    <span class="status-badge" [class.status-active]="row.arriendo.activo" [class.status-inactive]="!row.arriendo.activo">
+                      {{ row.arriendo.activo ? 'Activo' : 'Finalizado' }}
+                    </span>
+                  </td>
+                  <td class="actions-cell">
+                    <button
+                      type="button"
+                      class="action-button edit-button"
+                      (click)="openEditDialog(row.arriendo)"
+                    >
+                      Modificar
+                    </button>
+                    <button
+                      type="button"
+                      class="action-button finalize-button"
+                      [disabled]="!row.arriendo.activo"
+                      (click)="openFinalizeDialog(row.arriendo)"
+                    >
+                      Finalizar
+                    </button>
+                  </td>
+                </tr>
+                <tr *ngIf="!pagedArriendosRows().length">
+                  <td colspan="8" class="empty-state">No hay arriendos que coincidan con los filtros.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <footer class="table-footer">
+            <p>Mostrando {{ arriendosRangeStart() }}–{{ arriendosRangeEnd() }} de {{ filteredArriendosRows().length }} arriendos</p>
+            <div class="pagination">
+              <button type="button" (click)="arriendosPreviousPage()" [disabled]="arriendosPage() === 1">
+                Anterior
+              </button>
+              <span>Página {{ arriendosPage() }} de {{ arriendosTotalPages() }}</span>
+              <button type="button" (click)="arriendosNextPage()" [disabled]="arriendosPage() === arriendosTotalPages()">
+                Siguiente
+              </button>
+            </div>
+          </footer>
+        </section>
+
+        <!-- Edit dialog -->
+        <div *ngIf="editingArriendo()" class="dialog-overlay" (click)="closeEditDialog()">
+          <div class="dialog" (click)="$event.stopPropagation()">
+            <h3>Modificar arriendo #{{ editingArriendo()!.id }}</h3>
+
+            <div *ngIf="!showEditConfirm()" class="dialog-form">
+              <label class="field">
+                <span>Arrendatario (RUT)</span>
+                <select
+                  [ngModel]="editFormModel().arrendatarioRut"
+                  (ngModelChange)="updateEditField('arrendatarioRut', $event)"
+                >
+                  <option *ngFor="let tenant of allTenants()" [ngValue]="tenant.id">
+                    {{ tenant.fullName }} · {{ tenant.id }}
+                  </option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Fecha de inicio</span>
+                <input
+                  type="date"
+                  [ngModel]="editFormModel().fechaInicio"
+                  (ngModelChange)="updateEditField('fechaInicio', $event)"
+                />
+              </label>
+
+              <label class="field">
+                <span>Día de pago</span>
+                <select
+                  [ngModel]="editFormModel().paymentDay"
+                  (ngModelChange)="updateEditField('paymentDay', $event ? +$event : null)"
+                >
+                  <option [ngValue]="null" disabled>Selecciona día de pago</option>
+                  <option [ngValue]="5">5</option>
+                  <option [ngValue]="10">10</option>
+                  <option [ngValue]="15">15</option>
+                  <option [ngValue]="20">20</option>
+                  <option [ngValue]="25">25</option>
+                  <option [ngValue]="30">30</option>
+                </select>
+              </label>
+
+              <label class="field">
+                <span>Reajuste semestral (%)</span>
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  step="1"
+                  [ngModel]="editFormModel().semiannualAdjustment"
+                  (ngModelChange)="updateEditField('semiannualAdjustment', $event ? +$event : null)"
+                />
+              </label>
+
+              <div class="dialog-actions">
+                <button type="button" class="primary-button" (click)="requestEditConfirm()">
+                  Guardar cambios
+                </button>
+                <button type="button" class="ghost-button" (click)="closeEditDialog()">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="showEditConfirm()" class="dialog-confirm">
+              <p class="confirm-message">⚠️ ¿Confirmas modificar este arriendo? Esta operación actualizará los datos en el sistema.</p>
+              <div class="dialog-actions">
+                <button
+                  type="button"
+                  class="primary-button"
+                  [disabled]="isUpdating()"
+                  (click)="confirmEdit()"
+                >
+                  {{ isUpdating() ? 'Guardando…' : 'Sí, modificar' }}
+                </button>
+                <button type="button" class="ghost-button" [disabled]="isUpdating()" (click)="showEditConfirm.set(false)">
+                  Volver
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Finalize dialog -->
+        <div *ngIf="finalizingArriendo()" class="dialog-overlay" (click)="closeFinalizeDialog()">
+          <div class="dialog" (click)="$event.stopPropagation()">
+            <h3>Finalizar arriendo #{{ finalizingArriendo()!.id }}</h3>
+
+            <div *ngIf="!showFinalizeConfirm()" class="dialog-form">
+              <label class="field">
+                <span>Fecha de término</span>
+                <input
+                  type="date"
+                  [ngModel]="finalizeDate()"
+                  (ngModelChange)="finalizeDate.set($event)"
+                />
+              </label>
+
+              <div class="dialog-actions">
+                <button type="button" class="danger-button" (click)="requestFinalizeConfirm()">
+                  Finalizar arriendo
+                </button>
+                <button type="button" class="ghost-button" (click)="closeFinalizeDialog()">
+                  Cancelar
+                </button>
+              </div>
+            </div>
+
+            <div *ngIf="showFinalizeConfirm()" class="dialog-confirm">
+              <p class="confirm-message">⚠️ Esta acción finalizará el arriendo con fecha {{ finalizeDate() }}. Esta operación puede impactar cobros y eventos relacionados. ¿Deseas continuar?</p>
+              <div class="dialog-actions">
+                <button
+                  type="button"
+                  class="danger-button"
+                  [disabled]="isFinalizing()"
+                  (click)="confirmFinalize()"
+                >
+                  {{ isFinalizing() ? 'Finalizando…' : 'Sí, finalizar' }}
+                </button>
+                <button type="button" class="ghost-button" [disabled]="isFinalizing()" (click)="showFinalizeConfirm.set(false)">
+                  Volver
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </main>
   </div>
 </div>
