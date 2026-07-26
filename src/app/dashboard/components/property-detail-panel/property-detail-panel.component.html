@@ -57,8 +57,8 @@
         <select [(ngModel)]="editableProperty.propietario.rut">
           <option value="">Selecciona un propietario</option>
           <option
-            *ngIf="editableProperty.propietario.rut && !hasOwnerInList(editableProperty.propietario.rut)"
-            [ngValue]="editableProperty.propietario.rut"
+            *ngIf="editableProperty.propietario?.rut && !hasOwnerInList(editableProperty.propietario.rut)"
+            [ngValue]="editableProperty.propietario?.rut"
           >
             Actual ({{ editableProperty.propietario.rut }})
           </option>

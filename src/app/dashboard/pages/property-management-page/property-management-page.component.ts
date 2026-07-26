@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, effect, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { finalize } from 'rxjs';
 import { PropertyDetailPanelComponent } from '../../components/property-detail-panel/property-detail-panel.component';
 import { PropertyManagementFiltersComponent } from '../../components/property-management-filters/property-management-filters.component';
@@ -46,6 +47,7 @@ const EMPTY_PROPERTY: PropertyRecord = {
 export class PropertyManagementPageComponent {
   private readonly propertyService = inject(PropertyManagementService);
   private readonly contactService = inject(ContactManagementService);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly pageSize = 5;
   readonly properties = signal<PropertyRecord[]>([]);
@@ -219,13 +221,16 @@ export class PropertyManagementPageComponent {
   }
 
   private loadOwners(): void {
-    this.contactService.listContacts('propietarios').subscribe({
-      next: (owners) => this.owners.set(owners),
-      error: () => {
-        this.errorMessage.set(
-          'No se pudieron cargar los propietarios. Por favor, intenta recargar la página.'
-        );
-      }
-    });
+    this.contactService
+      .listContacts('propietarios')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (owners) => this.owners.set(owners),
+        error: () => {
+          this.errorMessage.set(
+            'No se pudieron cargar los propietarios. Por favor, intenta recargar la página.'
+          );
+        }
+      });
   }
 }
