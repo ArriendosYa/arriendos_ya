@@ -168,6 +168,7 @@ describe('TenantAssignmentPageComponent', () => {
       propiedad: { id: 4 },
       arrendatario: { rut: '12345678-9' },
       fechaInicio: '2026-07-01',
+      fechaTermino: '2027-06-30',
       diaPago: DiaPago.DIA_5,
       reajusteSemestral: 3,
       activo: true
@@ -200,6 +201,7 @@ describe('TenantAssignmentPageComponent', () => {
       propiedad: { id: 4 },
       arrendatario: { rut: '12345678-9' },
       fechaInicio: '2026-07-01',
+      fechaTermino: '2027-06-30',
       diaPago: DiaPago.DIA_5,
       reajusteSemestral: 3,
       activo: true

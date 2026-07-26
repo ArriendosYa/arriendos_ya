@@ -49,6 +49,13 @@
               >
                 Eventos
               </a>
+              <a
+                class="movements-button"
+                [routerLink]="['/propiedades', property.id, 'movimientos']"
+                (click)="$event.stopPropagation()"
+              >
+                Movimientos
+              </a>
               <button
                 type="button"
                 [disabled]="isDeleting"

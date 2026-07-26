@@ -135,6 +135,24 @@ tbody tr.selected {
   background: #dde0f8;
 }
 
+.movements-button {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid #cde5d5;
+  border-radius: 0.75rem;
+  background: #eefaf2;
+  color: #177245;
+  padding: 0.5rem 0.8rem;
+  cursor: pointer;
+  font-size: inherit;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.movements-button:hover {
+  background: #ddf2e5;
+}
+
 .pagination {
   display: flex;
   align-items: center;
