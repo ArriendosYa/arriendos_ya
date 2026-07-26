@@ -117,15 +117,20 @@
 
               <label class="field">
                 <span>Día de pago</span>
-                <input
-                  type="number"
+                <select
                   name="paymentDay"
-                  min="1"
-                  max="31"
                   required
                   [ngModel]="formModel().paymentDay"
                   (ngModelChange)="updateField('paymentDay', $event ? +$event : null)"
-                />
+                >
+                  <option [ngValue]="null" disabled selected>Selecciona día de pago</option>
+                  <option [ngValue]="5">5</option>
+                  <option [ngValue]="10">10</option>
+                  <option [ngValue]="15">15</option>
+                  <option [ngValue]="20">20</option>
+                  <option [ngValue]="25">25</option>
+                  <option [ngValue]="30">30</option>
+                </select>
               </label>
 
               <label class="field">
@@ -133,9 +138,9 @@
                 <input
                   type="number"
                   name="semiannualAdjustment"
-                  min="0"
+                  min="1"
                   max="100"
-                  step="0.1"
+                  step="1"
                   required
                   [ngModel]="formModel().semiannualAdjustment"
                   (ngModelChange)="updateField('semiannualAdjustment', $event ? +$event : null)"
@@ -197,20 +202,20 @@
             </div>
           </dl>
 
-          <div *ngIf="confirmedContract()" class="contract-summary">
-            <p class="contract-summary-title">📄 Contrato guardado (demo local)</p>
+          <div *ngIf="confirmedArriendo()" class="contract-summary">
+            <p class="contract-summary-title">📄 Arriendo guardado en backend</p>
             <dl>
               <div>
                 <dt>Estado</dt>
-                <dd>{{ confirmedContract()!.estado }}</dd>
+                <dd>{{ confirmedArriendo()!.activo ? 'ACTIVO' : 'FINALIZADO' }}</dd>
               </div>
               <div>
-                <dt>Origen</dt>
-                <dd>{{ confirmedContract()!.origen }}</dd>
+                <dt>Día de pago</dt>
+                <dd>{{ confirmedArriendo()!.diaPago }}</dd>
               </div>
               <div>
-                <dt>Guardado el</dt>
-                <dd>{{ confirmedContract()!.createdAt | date:'dd/MM/yyyy HH:mm' }}</dd>
+                <dt>Inicio</dt>
+                <dd>{{ confirmedArriendo()!.fechaInicio }}</dd>
               </div>
             </dl>
           </div>
@@ -256,10 +261,10 @@
                 <p class="saved-assignments-title">
                   {{ assignment.propertyAddress }} · {{ assignment.tenantName }}
                 </p>
-                <p>RUT arrendatario: {{ assignment.contract.arrendatarioRut }}</p>
-                <p>Renta mensual: ${{ assignment.contract.montoMensual }}</p>
+                <p>RUT arrendatario: {{ assignment.arriendo.arrendatario.rut }}</p>
+                <p>Día de pago: {{ assignment.arriendo.diaPago }}</p>
                 <p>
-                  Vigencia: {{ assignment.contract.fechaInicio }} → {{ assignment.contract.fechaTermino }}
+                  Vigencia: {{ assignment.arriendo.fechaInicio }} → {{ assignment.arriendo.fechaTermino || 'Sin término' }}
                 </p>
               </li>
             </ul>
