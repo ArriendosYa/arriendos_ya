@@ -1,14 +1,15 @@
 import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { switchMap } from 'rxjs';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { TopbarComponent } from '../../components/topbar/topbar.component';
+import { Arriendo, ArriendoPayload, DiaPago } from '../../models/arriendo.model';
 import { PropertyRecord } from '../../models/property.model';
-import { SimulatedContract } from '../../models/simulated-contract.model';
+import { ArriendosService } from '../../services/arriendos.service';
 import { ContactManagementService } from '../../services/contact-management.service';
 import { PropertyManagementService } from '../../services/property-management.service';
-import { SimulatedContractService } from '../../services/simulated-contract.service';
 
 interface TenantRecord {
   id: string;
@@ -17,7 +18,7 @@ interface TenantRecord {
 }
 
 interface SavedAssignmentSummary {
-  contract: SimulatedContract;
+  arriendo: Arriendo;
   propertyAddress: string;
   tenantName: string;
 }
@@ -44,6 +45,16 @@ const EMPTY_FORM: AssignmentFormValue = {
   semiannualAdjustment: null
 };
 
+const DIA_PAGO_BY_DAY: Partial<Record<number, DiaPago>> = {
+  5: DiaPago.DIA_5,
+  10: DiaPago.DIA_10,
+  15: DiaPago.DIA_15,
+  20: DiaPago.DIA_20,
+  25: DiaPago.DIA_25,
+  30: DiaPago.DIA_30
+};
+const RUT_PATTERN = /^\d{7,8}-[\dkK]$/;
+
 @Component({
   selector: 'app-tenant-assignment-page',
   standalone: true,
@@ -54,18 +65,18 @@ const EMPTY_FORM: AssignmentFormValue = {
 export class TenantAssignmentPageComponent implements OnInit {
   private readonly propertyService = inject(PropertyManagementService);
   private readonly contactService = inject(ContactManagementService);
-  private readonly contractService = inject(SimulatedContractService);
+  private readonly arriendosService = inject(ArriendosService);
 
   readonly allProperties = signal<PropertyRecord[]>([]);
   readonly allTenants = signal<TenantRecord[]>([]);
-  readonly savedContracts = signal<Record<number, SimulatedContract>>({});
+  readonly savedArriendos = signal<Arriendo[]>([]);
   readonly tenantQuery = signal('');
   readonly formModel = signal<AssignmentFormValue>({ ...EMPTY_FORM });
   readonly feedbackMessage = signal('');
   readonly feedbackType = signal<'success' | 'error' | 'info'>('info');
   readonly isSubmitting = signal(false);
   readonly showAssignments = signal(false);
-  readonly confirmedContract = signal<SimulatedContract | null>(null);
+  readonly confirmedArriendo = signal<Arriendo | null>(null);
   readonly availableProperties = computed(() =>
     this.allProperties().filter((property) => property.disponible)
   );
@@ -89,16 +100,17 @@ export class TenantAssignmentPageComponent implements OnInit {
     () => this.allTenants().find((tenant) => tenant.id === this.formModel().tenantId) ?? null
   );
   readonly savedAssignments = computed<SavedAssignmentSummary[]>(() =>
-    Object.values(this.savedContracts())
-      .sort((left, right) => right.createdAt.localeCompare(left.createdAt))
-      .map((contract) => {
-        const property = this.allProperties().find((item) => item.id === contract.propiedadId);
-        const tenant = this.allTenants().find((item) => item.id === contract.arrendatarioRut);
+    this.savedArriendos()
+      .slice()
+      .sort((left, right) => right.fechaInicio.localeCompare(left.fechaInicio))
+      .map((arriendo) => {
+        const property = this.allProperties().find((item) => item.id === arriendo.propiedad.id);
+        const tenant = this.allTenants().find((item) => item.id === arriendo.arrendatario.rut);
 
         return {
-          contract,
-          propertyAddress: property?.direccion ?? `Propiedad #${contract.propiedadId}`,
-          tenantName: tenant?.fullName ?? `Arrendatario ${contract.arrendatarioRut}`
+          arriendo,
+          propertyAddress: property?.direccion ?? `Propiedad #${arriendo.propiedad.id}`,
+          tenantName: tenant?.fullName ?? `Arrendatario ${arriendo.arrendatario.rut}`
         };
       })
   );
@@ -108,7 +120,7 @@ export class TenantAssignmentPageComponent implements OnInit {
   });
 
   ngOnInit(): void {
-    this.refreshSavedAssignments();
+    this.loadAssignments();
 
     this.propertyService.listProperties().subscribe((properties) => {
       this.allProperties.set(properties);
@@ -128,7 +140,7 @@ export class TenantAssignmentPageComponent implements OnInit {
   updateField<K extends keyof AssignmentFormValue>(field: K, value: AssignmentFormValue[K]): void {
     this.formModel.update((current) => ({ ...current, [field]: value }));
     if (field === 'propertyId' && typeof value === 'number') {
-      this.confirmedContract.set(this.contractService.getByPropertyId(value));
+      this.confirmedArriendo.set(this.findActiveArriendoByPropertyId(value));
     }
   }
 
@@ -150,6 +162,22 @@ export class TenantAssignmentPageComponent implements OnInit {
       return;
     }
 
+    const validationResult = this.validateArriendoValues(values, tenant.id);
+    if ('message' in validationResult) {
+      this.feedbackType.set('error');
+      this.feedbackMessage.set(validationResult.message);
+      return;
+    }
+
+    const payload = this.buildArriendoPayload(
+      property.id,
+      tenant.id,
+      values.startDate,
+      validationResult.diaPago,
+      validationResult.adjustment
+    );
+    const existingArriendo = this.findActiveArriendoByPropertyId(property.id);
+
     this.isSubmitting.set(true);
     this.feedbackMessage.set('');
 
@@ -161,41 +189,38 @@ export class TenantAssignmentPageComponent implements OnInit {
             ...property,
             disponible: false
           })
-        )
+        ),
+        switchMap((assignedProperty) => {
+          this.allProperties.update((properties) =>
+            properties.map((item) =>
+              item.id === assignedProperty.id ? { ...assignedProperty, disponible: false } : item
+            )
+          );
+
+          if (existingArriendo?.id) {
+            return this.arriendosService.update(existingArriendo.id, payload);
+          }
+
+          return this.arriendosService.create(payload);
+        })
       )
       .subscribe({
-      next: (assignedProperty) => {
-        this.allProperties.update((properties) =>
-          properties.map((item) =>
-            item.id === assignedProperty.id ? { ...assignedProperty, disponible: false } : item
-          )
-        );
-
-        const saved = this.contractService.saveContract({
-          propiedadId: property.id,
-          arrendatarioRut: tenant.id,
-          montoMensual: values.monthlyRent!,
-          mesGarantia: values.guaranteeMonths!,
-          fechaInicio: values.startDate,
-          fechaTermino: values.endDate,
-          diaPago: values.paymentDay!,
-          reajusteSemestral: values.semiannualAdjustment!
-        });
-
-        this.confirmedContract.set(saved);
-        this.refreshSavedAssignments();
-        this.isSubmitting.set(false);
-        this.feedbackType.set('success');
-        this.feedbackMessage.set(
-          `✓ Asignación confirmada: ${tenant.fullName} en ${property.direccion}.`
-        );
-      },
+        next: (savedArriendo) => {
+          this.confirmedArriendo.set(savedArriendo);
+          this.savedArriendos.update((arriendos) => {
+            const remaining = arriendos.filter((item) => item.id !== savedArriendo.id);
+            return [savedArriendo, ...remaining];
+          });
+          this.isSubmitting.set(false);
+          this.feedbackType.set('success');
+          this.feedbackMessage.set(
+            `✓ Asignación confirmada: ${tenant.fullName} en ${property.direccion}.`
+          );
+        },
         error: (err: unknown) => {
           this.isSubmitting.set(false);
           this.feedbackType.set('error');
-          const message =
-            err instanceof Error ? err.message : 'Error al comunicarse con el servidor.';
-          this.feedbackMessage.set(`Error al confirmar la asignación: ${message}`);
+          this.feedbackMessage.set(this.buildApiErrorMessage(err));
         }
       });
   }
@@ -212,24 +237,110 @@ export class TenantAssignmentPageComponent implements OnInit {
   cancelProcess(form: NgForm): void {
     this.formModel.set({ ...EMPTY_FORM });
     this.tenantQuery.set('');
-    this.confirmedContract.set(null);
+    this.confirmedArriendo.set(null);
     this.feedbackType.set('info');
     this.feedbackMessage.set('Proceso cancelado.');
     form.resetForm({ ...EMPTY_FORM });
   }
 
   resetDemo(form: NgForm): void {
-    this.contractService.clearAll();
-    this.refreshSavedAssignments();
-    this.confirmedContract.set(null);
     this.formModel.set({ ...EMPTY_FORM });
     this.tenantQuery.set('');
+    this.confirmedArriendo.set(null);
     this.feedbackType.set('info');
-    this.feedbackMessage.set('Demo reiniciada: contratos simulados eliminados.');
+    this.feedbackMessage.set('Formulario reiniciado.');
     form.resetForm({ ...EMPTY_FORM });
   }
 
-  private refreshSavedAssignments(): void {
-    this.savedContracts.set(this.contractService.getAll());
+  private loadAssignments(): void {
+    this.arriendosService.list().subscribe({
+      next: (arriendos) => {
+        this.savedArriendos.set(arriendos);
+      },
+      error: (err: unknown) => {
+        this.savedArriendos.set([]);
+        this.feedbackType.set('error');
+        this.feedbackMessage.set(`No se pudieron cargar los arriendos: ${this.buildApiErrorMessage(err)}`);
+      }
+    });
+  }
+
+  private findActiveArriendoByPropertyId(propiedadId: number): Arriendo | null {
+    return (
+      this.savedArriendos().find((arriendo) => arriendo.propiedad.id === propiedadId && arriendo.activo) ??
+      null
+    );
+  }
+
+  private validateArriendoValues(
+    values: AssignmentFormValue,
+    tenantRut: string
+  ): { message: string } | { diaPago: DiaPago; adjustment: number } {
+    if (!RUT_PATTERN.test(tenantRut)) {
+      return { message: 'El RUT del arrendatario debe incluir guion (ejemplo: 12345678-9).' };
+    }
+
+    const adjustment = values.semiannualAdjustment;
+    if (adjustment === null || !Number.isInteger(adjustment) || adjustment < 1 || adjustment > 100) {
+      return { message: 'El reajuste semestral debe ser un número entero entre 1 y 100.' };
+    }
+
+    const diaPago = this.mapDiaPago(values.paymentDay);
+    if (!diaPago) {
+      return {
+        message: 'El día de pago debe ser uno de los valores permitidos: 5, 10, 15, 20, 25 o 30.'
+      };
+    }
+
+    return { diaPago, adjustment };
+  }
+
+  private buildArriendoPayload(
+    propiedadId: number,
+    arrendatarioRut: string,
+    fechaInicio: string,
+    diaPago: DiaPago,
+    reajusteSemestral: number
+  ): ArriendoPayload {
+    return {
+      propiedad: { id: propiedadId },
+      arrendatario: { rut: arrendatarioRut },
+      fechaInicio,
+      diaPago,
+      reajusteSemestral,
+      activo: true
+    };
+  }
+
+  private mapDiaPago(paymentDay: number | null): DiaPago | null {
+    if (paymentDay === null) {
+      return null;
+    }
+
+    return DIA_PAGO_BY_DAY[paymentDay] ?? null;
+  }
+
+  private buildApiErrorMessage(err: unknown): string {
+    if (err instanceof HttpErrorResponse) {
+      if (err.status === 400) {
+        return 'Solicitud inválida. Revisa día de pago, RUT y reajuste semestral.';
+      }
+
+      if (err.status === 404) {
+        return 'No se encontró el recurso solicitado para esta asignación.';
+      }
+
+      if (err.status >= 500) {
+        return 'El servidor presentó un error. Inténtalo nuevamente.';
+      }
+
+      return `Error HTTP ${err.status}.`;
+    }
+
+    if (err instanceof Error) {
+      return err.message;
+    }
+
+    return 'Error al comunicarse con el servidor.';
   }
 }
