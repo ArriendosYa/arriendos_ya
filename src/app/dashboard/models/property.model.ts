@@ -8,6 +8,7 @@ export interface PropertyRecord {
   numeroBanos: number;
   precioArriendo: number;
   disponible: boolean;
+  propietario: { rut: string };
 }
 
 export interface PropertyFilters {

@@ -46,6 +46,7 @@
 
         <app-property-detail-panel
           [property]="panelProperty()"
+          [owners]="owners()"
           [isSaving]="isSaving()"
           [errorMessage]="errorMessage()"
           (save)="saveProperty($event)"

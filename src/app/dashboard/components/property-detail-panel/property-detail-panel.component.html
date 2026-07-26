@@ -51,9 +51,25 @@
           <option [ngValue]="false">No</option>
         </select>
       </label>
+
+      <label class="field field-full">
+        <span>Propietario</span>
+        <select [(ngModel)]="property.propietario.rut">
+          <option value="">Selecciona un propietario</option>
+          <option
+            *ngIf="property.propietario.rut && !hasOwnerInList(property.propietario.rut)"
+            [ngValue]="property.propietario.rut"
+          >
+            Actual ({{ property.propietario.rut }})
+          </option>
+          <option *ngFor="let owner of owners" [ngValue]="owner.rut">{{ formatOwnerLabel(owner) }}</option>
+        </select>
+      </label>
     </div>
 
-    <p *ngIf="errorMessage" class="error-message">{{ errorMessage }}</p>
+    <p *ngIf="validationMessage || errorMessage" class="error-message">
+      {{ validationMessage || errorMessage }}
+    </p>
 
     <div class="panel-footer">
       <span class="helper-text">Edita información clave y guarda los cambios.</span>

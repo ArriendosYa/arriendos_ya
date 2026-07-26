@@ -2,9 +2,26 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { of } from 'rxjs';
+import { ContactRecord } from '../../models/contact.model';
 import { PropertyRecord } from '../../models/property.model';
+import { ContactManagementService } from '../../services/contact-management.service';
 import { PropertyManagementService } from '../../services/property-management.service';
 import { PropertyManagementPageComponent } from './property-management-page.component';
+
+const MOCK_OWNERS: ContactRecord[] = [
+  {
+    rut: '12.345.678-5',
+    nombre: 'María',
+    apellido: 'Pérez',
+    telefono: '+56 9 1234 5678'
+  },
+  {
+    rut: '10.111.222-3',
+    nombre: 'Pedro',
+    apellido: 'González',
+    telefono: '+56 9 1111 1111'
+  }
+];
 
 const MOCK_PROPERTIES: PropertyRecord[] = [
   {
@@ -16,7 +33,8 @@ const MOCK_PROPERTIES: PropertyRecord[] = [
     numeroHabitaciones: 2,
     numeroBanos: 1,
     precioArriendo: 950000,
-    disponible: true
+    disponible: true,
+    propietario: { rut: '12.345.678-5' }
   },
   {
     id: 2,
@@ -27,7 +45,8 @@ const MOCK_PROPERTIES: PropertyRecord[] = [
     numeroHabitaciones: 3,
     numeroBanos: 2,
     precioArriendo: 1450000,
-    disponible: false
+    disponible: false,
+    propietario: { rut: '10.111.222-3' }
   }
 ];
 
@@ -36,23 +55,29 @@ describe('PropertyManagementPageComponent', () => {
     'PropertyManagementService',
     ['listProperties', 'createProperty', 'updateProperty', 'deleteProperty']
   );
+  const contactServiceSpy = jasmine.createSpyObj<ContactManagementService>('ContactManagementService', [
+    'listContacts'
+  ]);
 
   beforeEach(async () => {
     serviceSpy.listProperties.calls.reset();
     serviceSpy.createProperty.calls.reset();
     serviceSpy.updateProperty.calls.reset();
     serviceSpy.deleteProperty.calls.reset();
+    contactServiceSpy.listContacts.calls.reset();
     serviceSpy.listProperties.and.returnValue(of(MOCK_PROPERTIES));
     serviceSpy.createProperty.and.returnValue(of(MOCK_PROPERTIES[0]));
     serviceSpy.updateProperty.and.returnValue(of(MOCK_PROPERTIES[0]));
     serviceSpy.deleteProperty.and.returnValue(of(undefined));
+    contactServiceSpy.listContacts.and.returnValue(of(MOCK_OWNERS));
 
     await TestBed.configureTestingModule({
       imports: [PropertyManagementPageComponent],
       providers: [
         provideZonelessChangeDetection(),
         provideRouter([]),
-        { provide: PropertyManagementService, useValue: serviceSpy }
+        { provide: PropertyManagementService, useValue: serviceSpy },
+        { provide: ContactManagementService, useValue: contactServiceSpy }
       ]
     }).compileComponents();
   });
@@ -74,6 +99,7 @@ describe('PropertyManagementPageComponent', () => {
     fixture.detectChanges();
 
     expect(serviceSpy.listProperties).toHaveBeenCalled();
+    expect(contactServiceSpy.listContacts).toHaveBeenCalledWith('propietarios');
     expect(fixture.componentInstance.properties().length).toBe(2);
   });
 
@@ -124,11 +150,22 @@ describe('PropertyManagementPageComponent', () => {
       numeroHabitaciones: 2,
       numeroBanos: 1,
       precioArriendo: 500000,
-      disponible: true
+      disponible: true,
+      propietario: { rut: '12.345.678-5' }
     };
     fixture.componentInstance.saveProperty(newProperty);
 
-    expect(serviceSpy.createProperty).toHaveBeenCalled();
+    expect(serviceSpy.createProperty).toHaveBeenCalledWith({
+      direccion: 'Nueva Dir 123',
+      comuna: 'Santiago',
+      ciudad: 'Santiago',
+      region: 'Metropolitana',
+      numeroHabitaciones: 2,
+      numeroBanos: 1,
+      precioArriendo: 500000,
+      disponible: true,
+      propietario: { rut: '12.345.678-5' }
+    });
   });
 
   it('should call updateProperty on the service when saving an existing property', () => {
@@ -138,6 +175,20 @@ describe('PropertyManagementPageComponent', () => {
     fixture.componentInstance.saveProperty(MOCK_PROPERTIES[0]);
 
     expect(serviceSpy.updateProperty).toHaveBeenCalledWith(1, MOCK_PROPERTIES[0]);
+  });
+
+  it('should not save property when owner is missing', () => {
+    const fixture = TestBed.createComponent(PropertyManagementPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.saveProperty({
+      ...MOCK_PROPERTIES[0],
+      id: 0,
+      propietario: { rut: '   ' }
+    });
+
+    expect(serviceSpy.createProperty).not.toHaveBeenCalled();
+    expect(fixture.componentInstance.errorMessage()).toContain('propietario');
   });
 
   it('should call deleteProperty on the service', () => {
