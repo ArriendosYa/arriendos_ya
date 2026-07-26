@@ -188,4 +188,14 @@ describe('PropertyMovementsPageComponent', () => {
     expect(fixture.componentInstance.comprobanteModalUrl()).toBeNull();
     expect(fixture.componentInstance.isComprobanteModalOpen()).toBeFalse();
   });
+
+  it('should not open comprobante modal with unsafe URL', () => {
+    const fixture = TestBed.createComponent(PropertyMovementsPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.viewComprobante('javascript:alert(1)');
+
+    expect(fixture.componentInstance.comprobanteModalUrl()).toBeNull();
+    expect(fixture.componentInstance.isComprobanteModalOpen()).toBeFalse();
+  });
 });

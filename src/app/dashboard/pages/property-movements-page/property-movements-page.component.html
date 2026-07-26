@@ -177,7 +177,12 @@
       (click)="closeComprobanteModal()"
     >
       <div class="comprobante-modal-content" (click)="$event.stopPropagation()">
-        <button type="button" class="comprobante-modal-close" (click)="closeComprobanteModal()">
+        <button
+          type="button"
+          class="comprobante-modal-close"
+          aria-label="Cerrar modal de comprobante"
+          (click)="closeComprobanteModal()"
+        >
           ✕
         </button>
         <img class="comprobante-modal-image" [src]="comprobanteUrl" alt="Comprobante del movimiento" />

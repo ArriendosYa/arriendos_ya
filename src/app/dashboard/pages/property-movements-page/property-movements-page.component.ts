@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, ElementRef, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, ElementRef, SecurityContext, computed, inject, signal, viewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { DomSanitizer } from '@angular/platform-browser';
 import { ActivatedRoute, Router } from '@angular/router';
 import { finalize, of, switchMap } from 'rxjs';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
@@ -44,6 +45,7 @@ export class PropertyMovementsPageComponent {
   private readonly router = inject(Router);
   private readonly propertyService = inject(PropertyManagementService);
   private readonly movimientoService = inject(MovimientoService);
+  private readonly sanitizer = inject(DomSanitizer);
 
   readonly fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
 
@@ -209,11 +211,12 @@ export class PropertyMovementsPageComponent {
   }
 
   viewComprobante(url: string): void {
-    if (!url.trim()) {
+    const safeUrl = this.sanitizer.sanitize(SecurityContext.URL, url.trim());
+    if (!safeUrl || safeUrl.startsWith('unsafe:')) {
       return;
     }
 
-    this.comprobanteModalUrl.set(url);
+    this.comprobanteModalUrl.set(safeUrl);
   }
 
   closeComprobanteModal(): void {
