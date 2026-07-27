@@ -172,7 +172,7 @@ describe('ContactManagementPageComponent', () => {
     });
   });
 
-  it('should validate chilean rut values and email before saving', () => {
+  it('should validate chilean rut values before saving', () => {
     const fixture = TestBed.createComponent(ContactManagementPageComponent);
     fixture.detectChanges();
 
@@ -186,9 +186,16 @@ describe('ContactManagementPageComponent', () => {
     expect(fixture.componentInstance.isRutValid('12.345.678-5')).toBeTrue();
     expect(fixture.componentInstance.isRutValid('12.345.678-0')).toBeFalse();
     expect(serviceSpy.createContact).not.toHaveBeenCalled();
+  });
 
-    serviceSpy.createContact.calls.reset();
+  it('should validate email format before saving', () => {
+    const fixture = TestBed.createComponent(ContactManagementPageComponent);
+    fixture.detectChanges();
+
     fixture.componentInstance.updateField('rut', '12.345.678-5');
+    fixture.componentInstance.updateField('nombre', 'Paula');
+    fixture.componentInstance.updateField('apellido', 'Rojas');
+    fixture.componentInstance.updateField('telefono', '+56 9 2222 3333');
     fixture.componentInstance.updateField('email', 'correo-no-valido');
     fixture.componentInstance.saveContact(mockValidForm());
 

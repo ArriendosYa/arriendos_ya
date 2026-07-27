@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
-import { FormControl, FormsModule, NgForm, Validators } from '@angular/forms';
+import { AbstractControl, FormsModule, NgForm, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { TopbarComponent } from '../../components/topbar/topbar.component';
@@ -128,7 +128,12 @@ export class ContactManagementPageComponent {
   }
 
   isEmailValid(value: string): boolean {
-    return new FormControl(value.trim(), [Validators.required, Validators.email]).valid;
+    const trimmedValue = value.trim();
+    if (!trimmedValue) {
+      return false;
+    }
+
+    return Validators.email({ value: trimmedValue } as AbstractControl) === null;
   }
 
   hasEmailValidationError(form: NgForm): boolean {
