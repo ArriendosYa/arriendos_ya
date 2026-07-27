@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
-import { FormsModule, NgForm } from '@angular/forms';
+import { FormControl, FormsModule, NgForm, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { TopbarComponent } from '../../components/topbar/topbar.component';
@@ -128,22 +128,20 @@ export class ContactManagementPageComponent {
   }
 
   isEmailValid(value: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+    return new FormControl(value.trim(), [Validators.required, Validators.email]).valid;
   }
 
   hasEmailValidationError(form: NgForm): boolean {
-    const control = form.controls['email'];
-    return !!control && control.touched && !this.isEmailValid(this.formModel().email);
+    const control = form.controls?.['email'];
+    return !!control && control.touched && !this.isEmailValid(control.value ?? '');
   }
 
   saveContact(form: NgForm): void {
     form.control.markAllAsTouched();
 
-    if (
-      form.invalid ||
-      !this.isRutValid(this.formModel().rut) ||
-      !this.isEmailValid(this.formModel().email)
-    ) {
+    const emailValue = form.controls?.['email']?.value ?? this.formModel().email;
+
+    if (form.invalid || !this.isRutValid(this.formModel().rut) || !this.isEmailValid(emailValue)) {
       return;
     }
 

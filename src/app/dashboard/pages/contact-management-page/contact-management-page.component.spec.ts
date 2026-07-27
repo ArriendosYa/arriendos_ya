@@ -187,6 +187,7 @@ describe('ContactManagementPageComponent', () => {
     expect(fixture.componentInstance.isRutValid('12.345.678-0')).toBeFalse();
     expect(serviceSpy.createContact).not.toHaveBeenCalled();
 
+    serviceSpy.createContact.calls.reset();
     fixture.componentInstance.updateField('rut', '12.345.678-5');
     fixture.componentInstance.updateField('email', 'correo-no-valido');
     fixture.componentInstance.saveContact(mockValidForm());
