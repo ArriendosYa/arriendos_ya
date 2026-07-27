@@ -6,6 +6,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { finalize, of, switchMap } from 'rxjs';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { TopbarComponent } from '../../components/topbar/topbar.component';
+export { environment } from '../../../../environments/environment';
+
 import {
   MovimientoListResponse,
   MOVIMIENTO_TIPOS,
@@ -16,6 +18,7 @@ import {
 import { PropertyRecord } from '../../models/property.model';
 import { MovimientoService } from '../../services/movimiento.service';
 import { PropertyManagementService } from '../../services/property-management.service';
+import { environment } from '../../../../environments/environment.prod';
 
 interface MovimientoFormModel {
   tipo: MovimientoTipo;
@@ -214,6 +217,8 @@ export class PropertyMovementsPageComponent {
   }
 
   viewComprobante(url: string, altText?: string): void {
+    const tokenSAS = environment.tokenSAS;
+    url += `?${tokenSAS}`;
     const safeUrl = this.validateAndSanitizeUrl(url);
     if (!safeUrl) {
       this.movimientosError.set('No se pudo visualizar el comprobante porque su URL es inválida.');
