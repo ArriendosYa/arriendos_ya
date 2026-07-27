@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, effect, inject, signal } from '@angular/core';
-import { AbstractControl, FormsModule, NgForm, Validators } from '@angular/forms';
+import { FormsModule, NgForm } from '@angular/forms';
 import { finalize } from 'rxjs';
 import { SidebarComponent } from '../../components/sidebar/sidebar.component';
 import { TopbarComponent } from '../../components/topbar/topbar.component';
@@ -14,6 +14,8 @@ const EMPTY_CONTACT: ContactRecord = {
   telefono: '',
   email: ''
 };
+const EMAIL_PATTERN =
+  /^(?=.{1,254}$)(?=.{1,64}@)[-!#$%&'*+/0-9=?A-Z^_`a-z{|}~]+(\.[-!#$%&'*+/0-9=?A-Z^_`a-z{|}~]+)*@([A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?\.)+[A-Za-z]{2,}$/;
 
 type ContactCollection = Record<ContactResource, ContactRecord[]>;
 const PAGE_SIZE = 5;
@@ -129,11 +131,7 @@ export class ContactManagementPageComponent {
 
   isEmailValid(value: string): boolean {
     const trimmedValue = value.trim();
-    if (!trimmedValue) {
-      return false;
-    }
-
-    return Validators.email({ value: trimmedValue } as AbstractControl) === null;
+    return EMAIL_PATTERN.test(trimmedValue);
   }
 
   hasEmailValidationError(form: NgForm): boolean {
@@ -144,9 +142,7 @@ export class ContactManagementPageComponent {
   saveContact(form: NgForm): void {
     form.control.markAllAsTouched();
 
-    const emailValue = form.controls?.['email']?.value ?? this.formModel().email;
-
-    if (form.invalid || !this.isRutValid(this.formModel().rut) || !this.isEmailValid(emailValue)) {
+    if (form.invalid || !this.isRutValid(this.formModel().rut) || !this.isEmailValid(this.formModel().email)) {
       return;
     }
 
