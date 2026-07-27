@@ -122,7 +122,6 @@
                   <th>Tipo</th>
                   <th>Concepto</th>
                   <th>Monto</th>
-                  <th>Comprobante</th>
                 </tr>
               </thead>
               <tbody>
@@ -130,13 +129,7 @@
                   <td>{{ movimiento.fecha }}</td>
                   <td>{{ movimiento.tipo }}</td>
                   <td>{{ movimiento.concepto }}</td>
-                  <td>$ {{ movimiento.monto | number: '1.0-0' }}</td>
-                  <td>
-                    <a *ngIf="movimiento.urlComprobante" [href]="movimiento.urlComprobante" target="_blank" rel="noopener noreferrer">
-                      Ver archivo
-                    </a>
-                    <span *ngIf="!movimiento.urlComprobante">—</span>
-                  </td>
+                  <td>$ {{ movimiento.monto | number: '1.0-0' }}</td> 
                 </tr>
                 <tr *ngIf="!monthlyReport.movimientos.length">
                   <td colspan="5" class="empty-state">No hay movimientos para el período seleccionado.</td>
