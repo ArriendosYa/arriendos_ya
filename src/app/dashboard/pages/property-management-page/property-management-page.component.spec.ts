@@ -13,13 +13,15 @@ const MOCK_OWNERS: ContactRecord[] = [
     rut: '12.345.678-5',
     nombre: 'María',
     apellido: 'Pérez',
-    telefono: '+56 9 1234 5678'
+    telefono: '+56 9 1234 5678',
+    email: 'maria.perez@example.com'
   },
   {
     rut: '10.111.222-3',
     nombre: 'Pedro',
     apellido: 'González',
-    telefono: '+56 9 1111 1111'
+    telefono: '+56 9 1111 1111',
+    email: 'pedro.gonzalez@example.com'
   }
 ];
 

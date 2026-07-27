@@ -51,6 +51,7 @@
                   <th>Nombre</th>
                   <th>RUT</th>
                   <th>Teléfono</th>
+                  <th>Email</th>
                 </tr>
               </thead>
               <tbody>
@@ -62,9 +63,10 @@
                   <td>{{ getFullName(contact) }}</td>
                   <td>{{ contact.rut }}</td>
                   <td>{{ contact.telefono }}</td>
+                  <td>{{ contact.email }}</td>
                 </tr>
                 <tr *ngIf="!currentContacts().length">
-                  <td colspan="3" class="empty-state">No hay registros para mostrar.</td>
+                  <td colspan="4" class="empty-state">No hay registros para mostrar.</td>
                 </tr>
               </tbody>
             </table>
@@ -135,6 +137,21 @@
               [ngModel]="formModel().telefono"
               (ngModelChange)="updateField('telefono', $event)"
             />
+          </label>
+
+          <label class="field">
+            <span>Email</span>
+            <input
+              type="email"
+              name="email"
+              required
+              [class.invalid]="hasEmailValidationError(contactForm)"
+              [ngModel]="formModel().email"
+              (ngModelChange)="updateField('email', $event)"
+            />
+            <small class="field-error" *ngIf="hasEmailValidationError(contactForm)">
+              Ingresa un email válido.
+            </small>
           </label>
 
           <p class="state-message success" *ngIf="successMessage()">{{ successMessage() }}</p>

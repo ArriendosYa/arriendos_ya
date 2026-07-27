@@ -11,7 +11,8 @@ const EMPTY_CONTACT: ContactRecord = {
   rut: '',
   nombre: '',
   apellido: '',
-  telefono: ''
+  telefono: '',
+  email: ''
 };
 
 type ContactCollection = Record<ContactResource, ContactRecord[]>;
@@ -126,10 +127,23 @@ export class ContactManagementPageComponent {
     return !!control && control.touched && !this.isRutValid(this.formModel().rut);
   }
 
+  isEmailValid(value: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+  }
+
+  hasEmailValidationError(form: NgForm): boolean {
+    const control = form.controls['email'];
+    return !!control && control.touched && !this.isEmailValid(this.formModel().email);
+  }
+
   saveContact(form: NgForm): void {
     form.control.markAllAsTouched();
 
-    if (form.invalid || !this.isRutValid(this.formModel().rut)) {
+    if (
+      form.invalid ||
+      !this.isRutValid(this.formModel().rut) ||
+      !this.isEmailValid(this.formModel().email)
+    ) {
       return;
     }
 
