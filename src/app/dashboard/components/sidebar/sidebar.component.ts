@@ -22,7 +22,7 @@ export class SidebarComponent {
     { label: 'Contactos', path: '/contactos' },
     { label: 'Asignaciones', path: '/asignaciones' },
     { label: 'Pagos' },
-    { label: 'Reportes' },
+    { label: 'Reportes', path: '/reportes' },
     { label: 'Configuración' }
   ];
 }

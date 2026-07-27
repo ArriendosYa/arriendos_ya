@@ -1,0 +1,178 @@
+<div class="dashboard-layout">
+  <app-sidebar class="sidebar-column"></app-sidebar>
+
+  <div class="main-column">
+    <app-topbar></app-topbar>
+
+    <main class="page-content">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Reportes</p>
+          <h1>Reporte Mensual por Propiedad</h1>
+          <p class="hero-copy">Consulta información mensual y envíala al propietario.</p>
+        </div>
+      </section>
+
+      <p *ngIf="queryError()" class="error-banner">{{ queryError() }}</p>
+      <p *ngIf="sendError()" class="error-banner">{{ sendError() }}</p>
+      <p *ngIf="successMessage()" class="success-message">{{ successMessage() }}</p>
+
+      <section class="panel-card">
+        <div class="field-grid">
+          <label class="field">
+            <span>Propiedad</span>
+            <select
+              [ngModel]="selectedPropertyId()"
+              (ngModelChange)="updateSelectedProperty($event)"
+              [disabled]="isLoadingProperties()"
+            >
+              <option [ngValue]="null">Selecciona una propiedad</option>
+              <option *ngFor="let property of properties()" [ngValue]="property.id">
+                {{ property.direccion }} ({{ property.comuna }})
+              </option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Mes</span>
+            <select [ngModel]="selectedMes()" (ngModelChange)="selectedMes.set(+$event)">
+              <option *ngFor="let month of monthOptions" [ngValue]="month.value">{{ month.label }}</option>
+            </select>
+          </label>
+
+          <label class="field">
+            <span>Año</span>
+            <input
+              type="number"
+              min="2000"
+              [ngModel]="selectedAnio()"
+              (ngModelChange)="selectedAnio.set(+$event)"
+            />
+          </label>
+        </div>
+
+        <label class="field">
+          <span>Destinatarios</span>
+          <input
+            type="text"
+            [ngModel]="destinatariosInput()"
+            (ngModelChange)="destinatariosInput.set($event)"
+            placeholder="correo1@dominio.com, correo2@dominio.com"
+          />
+        </label>
+
+        <div class="actions-row">
+          <button
+            type="button"
+            class="secondary-button"
+            [disabled]="isLoading()"
+            (click)="consultarReporte()"
+          >
+            <span *ngIf="isLoadingReport()">Consultando...</span>
+            <span *ngIf="!isLoadingReport()">Consultar Reporte</span>
+          </button>
+
+          <button
+            type="button"
+            class="primary-button"
+            [disabled]="isSending() || !report()"
+            (click)="enviarReporte()"
+          >
+            <span *ngIf="isSending()">Enviando...</span>
+            <span *ngIf="!isSending()">Enviar Reporte</span>
+          </button>
+        </div>
+      </section>
+
+      <div *ngIf="isLoadingReport()" class="loading-state">Cargando reporte mensual...</div>
+
+      <ng-container *ngIf="report() as monthlyReport">
+        <section class="summary-grid">
+          <article class="summary-card">
+            <p>Total Ingresos</p>
+            <h3>$ {{ monthlyReport.totalIngresos | number: '1.0-0' }}</h3>
+          </article>
+          <article class="summary-card">
+            <p>Total Egresos</p>
+            <h3>$ {{ monthlyReport.totalEgresos | number: '1.0-0' }}</h3>
+          </article>
+          <article class="summary-card">
+            <p>Balance</p>
+            <h3>$ {{ monthlyReport.balance | number: '1.0-0' }}</h3>
+          </article>
+          <article class="summary-card">
+            <p>Días Ocupados</p>
+            <h3>{{ monthlyReport.diasOcupados }} / {{ monthlyReport.diasTotalesMes }}</h3>
+          </article>
+          <article class="summary-card">
+            <p>Ocupación</p>
+            <h3>{{ monthlyReport.porcentajeOcupacion | number: '1.0-2' }}%</h3>
+          </article>
+        </section>
+
+        <section class="panel-card">
+          <p class="eyebrow">Movimientos</p>
+          <h2>Detalle de movimientos</h2>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Concepto</th>
+                  <th>Monto</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let movimiento of monthlyReport.movimientos; trackBy: trackByMovimiento">
+                  <td>{{ movimiento.fecha }}</td>
+                  <td>{{ movimiento.tipo }}</td>
+                  <td>{{ movimiento.concepto }}</td>
+                  <td>$ {{ movimiento.monto | number: '1.0-0' }}</td> 
+                </tr>
+                <tr *ngIf="!monthlyReport.movimientos.length">
+                  <td colspan="5" class="empty-state">No hay movimientos para el período seleccionado.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel-card">
+          <p class="eyebrow">Eventos</p>
+          <h2>Eventos del período</h2>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Descripción</th>
+                  <th>URL</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let evento of monthlyReport.eventos; trackBy: trackByEvento">
+                  <td>{{ evento.fecha }}</td>
+                  <td>{{ evento.tipo }}</td>
+                  <td>{{ evento.descripcion }}</td>
+                  <td>
+                    <a *ngIf="evento.url" [href]="evento.url" target="_blank" rel="noopener noreferrer">
+                      Abrir
+                    </a>
+                    <span *ngIf="!evento.url">—</span>
+                  </td>
+                </tr>
+                <tr *ngIf="!monthlyReport.eventos.length">
+                  <td colspan="4" class="empty-state">No hay eventos para el período seleccionado.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </ng-container>
+    </main>
+  </div>
+</div>
