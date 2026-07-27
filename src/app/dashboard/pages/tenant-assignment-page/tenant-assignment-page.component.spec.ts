@@ -33,14 +33,16 @@ const MOCK_CONTACT: ContactRecord = {
   rut: '12345678-9',
   nombre: 'Camila',
   apellido: 'Torres',
-  telefono: '+56 9 8512 4491'
+  telefono: '+56 9 8512 4491',
+  email: 'camila.torres@example.com'
 };
 
 const MOCK_OWNER_CONTACT: ContactRecord = {
   rut: '12.345.678-5',
   nombre: 'Pedro',
   apellido: 'Soto',
-  telefono: '+56 9 1234 5678'
+  telefono: '+56 9 1234 5678',
+  email: 'pedro.soto@example.com'
 };
 
 const MOCK_ARRENDAMIENTO: Arriendo = {

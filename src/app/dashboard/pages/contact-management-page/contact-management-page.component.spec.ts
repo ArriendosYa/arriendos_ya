@@ -12,37 +12,43 @@ const MOCK_PROPIETARIOS: ContactRecord[] = [
     rut: '12.345.678-5',
     nombre: 'María',
     apellido: 'Pérez',
-    telefono: '+56 9 1234 5678'
+    telefono: '+56 9 1234 5678',
+    email: 'maria.perez@example.com'
   },
   {
     rut: '10.111.222-3',
     nombre: 'Pedro',
     apellido: 'González',
-    telefono: '+56 9 1111 1111'
+    telefono: '+56 9 1111 1111',
+    email: 'pedro.gonzalez@example.com'
   },
   {
     rut: '14.567.890-K',
     nombre: 'Laura',
     apellido: 'Molina',
-    telefono: '+56 9 2222 2222'
+    telefono: '+56 9 2222 2222',
+    email: 'laura.molina@example.com'
   },
   {
     rut: '16.234.567-4',
     nombre: 'Carlos',
     apellido: 'Ruiz',
-    telefono: '+56 9 3333 3333'
+    telefono: '+56 9 3333 3333',
+    email: 'carlos.ruiz@example.com'
   },
   {
     rut: '18.765.432-6',
     nombre: 'Ana',
     apellido: 'Silva',
-    telefono: '+56 9 4444 4444'
+    telefono: '+56 9 4444 4444',
+    email: 'ana.silva@example.com'
   },
   {
     rut: '9.876.543-3',
     nombre: 'Sofía',
     apellido: 'Torres',
-    telefono: '+56 9 5555 5555'
+    telefono: '+56 9 5555 5555',
+    email: 'sofia.torres@example.com'
   }
 ];
 
@@ -51,7 +57,8 @@ const MOCK_ARRENDATARIOS: ContactRecord[] = [
     rut: '98.765.432-1',
     nombre: 'Juan',
     apellido: 'Soto',
-    telefono: '+56 9 1111 2222'
+    telefono: '+56 9 1111 2222',
+    email: 'juan.soto@example.com'
   }
 ];
 
@@ -143,12 +150,14 @@ describe('ContactManagementPageComponent', () => {
     fixture.componentInstance.updateField('nombre', 'Paula');
     fixture.componentInstance.updateField('apellido', 'Rojas');
     fixture.componentInstance.updateField('telefono', '+56 9 2222 3333');
+    fixture.componentInstance.updateField('email', 'paula.rojas@example.com');
     fixture.componentInstance.saveContact(mockValidForm());
     expect(serviceSpy.createContact).toHaveBeenCalledWith('propietarios', {
       rut: '11.111.111-1',
       nombre: 'Paula',
       apellido: 'Rojas',
-      telefono: '+56 9 2222 3333'
+      telefono: '+56 9 2222 3333',
+      email: 'paula.rojas@example.com'
     });
 
     fixture.componentInstance.selectContact(MOCK_PROPIETARIOS[0]);
@@ -158,7 +167,8 @@ describe('ContactManagementPageComponent', () => {
       rut: '12.345.678-5',
       nombre: 'María',
       apellido: 'Pérez',
-      telefono: '+56 9 9999 9999'
+      telefono: '+56 9 9999 9999',
+      email: 'maria.perez@example.com'
     });
   });
 
@@ -170,10 +180,27 @@ describe('ContactManagementPageComponent', () => {
     fixture.componentInstance.updateField('nombre', 'Paula');
     fixture.componentInstance.updateField('apellido', 'Rojas');
     fixture.componentInstance.updateField('telefono', '+56 9 2222 3333');
+    fixture.componentInstance.updateField('email', 'paula.rojas@example.com');
     fixture.componentInstance.saveContact(mockValidForm());
 
     expect(fixture.componentInstance.isRutValid('12.345.678-5')).toBeTrue();
     expect(fixture.componentInstance.isRutValid('12.345.678-0')).toBeFalse();
+    expect(serviceSpy.createContact).not.toHaveBeenCalled();
+  });
+
+  it('should validate email format before saving', () => {
+    const fixture = TestBed.createComponent(ContactManagementPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.updateField('rut', '12.345.678-5');
+    fixture.componentInstance.updateField('nombre', 'Paula');
+    fixture.componentInstance.updateField('apellido', 'Rojas');
+    fixture.componentInstance.updateField('telefono', '+56 9 2222 3333');
+    fixture.componentInstance.updateField('email', 'correo-no-valido');
+    fixture.componentInstance.saveContact(mockValidForm());
+
+    expect(fixture.componentInstance.isEmailValid('paula.rojas@example.com')).toBeTrue();
+    expect(fixture.componentInstance.isEmailValid('correo-no-valido')).toBeFalse();
     expect(serviceSpy.createContact).not.toHaveBeenCalled();
   });
 

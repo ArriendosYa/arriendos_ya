@@ -5,4 +5,5 @@ export interface ContactRecord {
   nombre: string;
   apellido: string;
   telefono: string;
+  email: string;
 }
