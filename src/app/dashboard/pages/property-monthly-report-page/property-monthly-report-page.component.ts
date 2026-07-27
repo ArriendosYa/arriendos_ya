@@ -71,6 +71,12 @@ export class PropertyMonthlyReportPageComponent {
   }
 
   updateSelectedProperty(rawValue: string | number | null): void {
+    if (rawValue === null || rawValue === '') {
+      this.selectedPropertyId.set(null);
+      this.destinatariosInput.set('');
+      return;
+    }
+
     const value = Number(rawValue);
     if (!Number.isInteger(value) || value <= 0) {
       this.selectedPropertyId.set(null);
@@ -139,7 +145,7 @@ export class PropertyMonthlyReportPageComponent {
       .pipe(finalize(() => this.isSending.set(false)))
       .subscribe({
         next: () => {
-          this.successMessage.set('Reporte enviado exitosamente al propietario.');
+          this.successMessage.set('Reporte enviado exitosamente a los destinatarios indicados.');
         },
         error: (error) => {
           this.sendError.set(
@@ -166,13 +172,15 @@ export class PropertyMonthlyReportPageComponent {
       .subscribe({
         next: (properties) => {
           this.properties.set(properties);
-          if (!this.selectedPropertyId() && properties.length) {
+          if (this.selectedPropertyId() === null && properties.length) {
             this.selectedPropertyId.set(properties[0].id);
-            this.fillDestinatariosWithOwnerEmail();
           }
+          this.fillDestinatariosWithOwnerEmail();
         },
-        error: () => {
-          this.queryError.set('No se pudieron cargar las propiedades disponibles.');
+        error: (error) => {
+          this.setQueryError(
+            this.extractErrorMessage(error, 'No se pudieron cargar las propiedades disponibles.')
+          );
         }
       });
   }
@@ -183,8 +191,10 @@ export class PropertyMonthlyReportPageComponent {
         this.owners.set(owners);
         this.fillDestinatariosWithOwnerEmail();
       },
-      error: () => {
-        this.sendError.set('No se pudieron cargar los correos de propietarios.');
+      error: (error) => {
+        this.setQueryError(
+          this.extractErrorMessage(error, 'No se pudieron cargar los correos de propietarios.')
+        );
       }
     });
   }
@@ -223,7 +233,46 @@ export class PropertyMonthlyReportPageComponent {
   }
 
   private isEmailValid(value: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+    const normalized = value.trim().toLowerCase();
+    const [localPart, domainPart, ...rest] = normalized.split('@');
+
+    if (
+      rest.length ||
+      !localPart ||
+      !domainPart ||
+      localPart.startsWith('.') ||
+      localPart.endsWith('.') ||
+      localPart.includes('..') ||
+      !/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+$/.test(localPart)
+    ) {
+      return false;
+    }
+
+    if (
+      domainPart.startsWith('.') ||
+      domainPart.endsWith('.') ||
+      domainPart.includes('..') ||
+      !domainPart.includes('.')
+    ) {
+      return false;
+    }
+
+    const domainSegments = domainPart.split('.');
+    return domainSegments.every(
+      (segment) => segment.length > 0 && /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/.test(segment)
+    );
+  }
+
+  private setQueryError(message: string): void {
+    const current = this.queryError().trim();
+    if (!current) {
+      this.queryError.set(message);
+      return;
+    }
+
+    if (!current.includes(message)) {
+      this.queryError.set(`${current} ${message}`);
+    }
   }
 
   private extractErrorMessage(error: unknown, fallback: string): string {

@@ -135,4 +135,78 @@ describe('PropertyMonthlyReportPageComponent', () => {
     expect(reportServiceSpy.getReporteMensual).not.toHaveBeenCalled();
     expect(fixture.componentInstance.queryError()).toContain('mes');
   });
+
+  it('should parse recipients trimming spaces and removing empty values', () => {
+    const fixture = TestBed.createComponent(PropertyMonthlyReportPageComponent);
+    fixture.detectChanges();
+
+    const parsed = (fixture.componentInstance as any).parseDestinatarios(
+      ' owner@example.com, , admin@example.com  ,'
+    );
+
+    expect(parsed).toEqual(['owner@example.com', 'admin@example.com']);
+  });
+
+  it('should validate email formats', () => {
+    const fixture = TestBed.createComponent(PropertyMonthlyReportPageComponent);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as any;
+    expect(component.isEmailValid('user@example.com')).toBeTrue();
+    expect(component.isEmailValid('user@@example.com')).toBeFalse();
+    expect(component.isEmailValid('user@.example.com')).toBeFalse();
+    expect(component.isEmailValid('user@example..com')).toBeFalse();
+    expect(component.isEmailValid('user@-example.com')).toBeFalse();
+    expect(component.isEmailValid('.user@example.com')).toBeFalse();
+    expect(component.isEmailValid('us(er@example.com')).toBeFalse();
+  });
+
+  it('should clear recipients when selected property is invalid', () => {
+    const fixture = TestBed.createComponent(PropertyMonthlyReportPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.destinatariosInput.set('prev@example.com');
+    fixture.componentInstance.updateSelectedProperty(0);
+
+    expect(fixture.componentInstance.selectedPropertyId()).toBeNull();
+    expect(fixture.componentInstance.destinatariosInput()).toBe('');
+  });
+
+  it('should keep recipients empty when owner is not found', () => {
+    const fixture = TestBed.createComponent(PropertyMonthlyReportPageComponent);
+    fixture.detectChanges();
+
+    fixture.componentInstance.owners.set([]);
+    fixture.componentInstance.updateSelectedProperty(5);
+
+    expect(fixture.componentInstance.destinatariosInput()).toBe('');
+  });
+
+  it('should append query errors without duplicating messages', () => {
+    const fixture = TestBed.createComponent(PropertyMonthlyReportPageComponent);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as any;
+    component.setQueryError('Error A');
+    component.setQueryError('Error B');
+    component.setQueryError('Error B');
+
+    expect(fixture.componentInstance.queryError()).toBe('Error A Error B');
+  });
+
+  it('should extract backend messages from multiple payload formats', () => {
+    const fixture = TestBed.createComponent(PropertyMonthlyReportPageComponent);
+    fixture.detectChanges();
+
+    const component = fixture.componentInstance as any;
+    expect(component.extractErrorMessage({ error: 'Texto error' }, 'fallback')).toBe('Texto error');
+    expect(component.extractErrorMessage({ error: { message: 'Objeto error' } }, 'fallback')).toBe(
+      'Objeto error'
+    );
+    expect(
+      component.extractErrorMessage({ error: { message: ['Error 1', 'Error 2'] } }, 'fallback')
+    ).toBe('Error 1 · Error 2');
+    expect(component.extractErrorMessage({ message: 'Top level' }, 'fallback')).toBe('Top level');
+    expect(component.extractErrorMessage({}, 'fallback')).toBe('fallback');
+  });
 });
