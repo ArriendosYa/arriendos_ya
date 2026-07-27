@@ -92,6 +92,7 @@ describe('PropertyManagementPageComponent', () => {
     expect(compiled.textContent).toContain('Mantener Propiedades');
     expect(compiled.textContent).toContain('Filtros');
     expect(compiled.textContent).toContain('Nueva Propiedad');
+    expect(compiled.textContent).toContain('Movimientos');
   });
 
   it('should load properties from the API on init', () => {

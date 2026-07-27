@@ -1,0 +1,200 @@
+<div class="dashboard-layout">
+  <app-sidebar class="sidebar-column"></app-sidebar>
+
+  <div class="main-column">
+    <app-topbar></app-topbar>
+
+    <main class="page-content">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Gestión de movimientos</p>
+          <h1>Movimientos de Propiedad</h1>
+          <p class="hero-copy" *ngIf="property()">
+            {{ property()!.direccion }}, {{ property()!.comuna }}
+          </p>
+        </div>
+
+        <button type="button" class="secondary-button" (click)="goBack()">← Volver a Propiedades</button>
+      </section>
+
+      <p *ngIf="propertyError()" class="error-banner">{{ propertyError() }}</p>
+      <p *ngIf="movimientosError()" class="error-banner">{{ movimientosError() }}</p>
+
+      <div *ngIf="isLoading()" class="loading-state">Cargando movimientos...</div>
+
+      <section *ngIf="!isLoading()" class="summary-grid">
+        <article class="summary-card">
+          <p>Total Ingresos</p>
+          <h3>$ {{ totalIngresos() | number: '1.0-0' }}</h3>
+        </article>
+        <article class="summary-card">
+          <p>Total Egresos</p>
+          <h3>$ {{ totalEgresos() | number: '1.0-0' }}</h3>
+        </article>
+        <article class="summary-card">
+          <p>Saldo</p>
+          <h3>$ {{ saldo() | number: '1.0-0' }}</h3>
+        </article>
+      </section>
+
+      <section *ngIf="!isLoading()" class="content-grid">
+        <div class="table-card">
+          <div class="table-header">
+            <div>
+              <p class="eyebrow">Historial</p>
+              <h2>Transacciones registradas</h2>
+            </div>
+          </div>
+
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Tipo</th>
+                  <th>Concepto</th>
+                  <th>Monto</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let movimiento of movimientos(); trackBy: trackByMovimiento">
+                  <td>{{ movimiento.fecha || '—' }}</td>
+                  <td>
+                    <span
+                      class="type-pill"
+                      [ngClass]="movimiento.tipo === 'INGRESO' ? 'type-ingreso' : 'type-egreso'"
+                    >
+                      {{ movimiento.tipo }}
+                    </span>
+                  </td>
+                  <td>{{ movimiento.concepto }}</td>
+                  <td>$ {{ movimiento.monto | number: '1.0-0' }}</td>
+                  <td>
+                    <div class="actions">
+                      <button
+                        *ngIf="movimiento.urlComprobante"
+                        type="button"
+                        (click)="viewComprobante(movimiento.urlComprobante, buildComprobanteAlt(movimiento))"
+                      >
+                        Ver Comprobante
+                      </button>
+                      <button type="button" (click)="startEdit(movimiento)">Editar</button>
+                      <button
+                        type="button"
+                        [disabled]="deletingMovimientoId() === movimiento.id"
+                        (click)="deleteMovimiento(movimiento)"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+
+                <tr *ngIf="!movimientos().length">
+                  <td colspan="6" class="empty-state">No hay movimientos registrados para esta propiedad.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="form-card">
+          <p class="eyebrow">{{ isEditing() ? 'Editar' : 'Nuevo' }} movimiento</p>
+          <h2>{{ isEditing() ? 'Actualizar movimiento' : 'Registrar movimiento' }}</h2>
+
+          <p *ngIf="successMessage()" class="success-message">{{ successMessage() }}</p>
+          <p *ngIf="formError()" class="error-banner">{{ formError() }}</p>
+
+          <div class="field-grid">
+            <label class="field field-full">
+              <span>Tipo</span>
+              <select [ngModel]="formModel().tipo" (ngModelChange)="updateFormField('tipo', $event)">
+                <option *ngFor="let tipo of movimientoTipos" [value]="tipo">{{ tipo }}</option>
+              </select>
+            </label>
+
+            <label class="field field-full">
+              <span>Concepto</span>
+              <input
+                type="text"
+                [ngModel]="formModel().concepto"
+                (ngModelChange)="updateFormField('concepto', $event)"
+                placeholder="Ej: Pago de arriendo"
+              />
+            </label>
+
+            <label class="field field-full">
+              <span>Monto</span>
+              <input
+                type="number"
+                min="1"
+                [ngModel]="formModel().monto"
+                (ngModelChange)="updateFormField('monto', $event === '' ? null : +$event)"
+                placeholder="0"
+              />
+            </label>
+ 
+          </div>
+
+          <div
+            class="upload-zone"
+            [class.drag-over]="isDragOver()"
+            (click)="openFilePicker()"
+            (dragover)="onDragOver($event)"
+            (dragleave)="onDragLeave($event)"
+            (drop)="onDrop($event)"
+          >
+            <input
+              #fileInput
+              type="file"
+              accept="image/*,.pdf"
+              class="hidden-file-input"
+              (change)="onFileSelected($event)"
+            />
+
+            <p class="upload-title">Comprobante (opcional)</p>
+            <p class="upload-copy">Arrastra y suelta un archivo aquí o haz clic para seleccionar.</p>
+            <p class="upload-file" *ngIf="selectedFile() as file">Archivo: {{ file.name }}</p>
+          </div>
+
+          <div class="form-footer">
+            <button type="button" class="secondary-button" [disabled]="isSaving()" (click)="resetForm()">
+              Limpiar
+            </button>
+            <button type="button" class="primary-button" [disabled]="isSaving()" (click)="saveMovimiento()">
+              <span *ngIf="isSaving()">Guardando...</span>
+              <span *ngIf="!isSaving()">{{ isEditing() ? 'Actualizar' : 'Registrar' }}</span>
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div
+      *ngIf="comprobanteModalUrl() as comprobanteUrl"
+      class="comprobante-modal-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Comprobante del movimiento"
+      (click)="closeComprobanteModal()"
+    >
+      <div class="comprobante-modal-content" (click)="$event.stopPropagation()">
+        <button
+          type="button"
+          class="comprobante-modal-close"
+          aria-label="Cerrar modal de comprobante"
+          (click)="closeComprobanteModal()"
+        >
+          ✕
+        </button>
+        <img
+          class="comprobante-modal-image"
+          [src]="comprobanteUrl"
+          [alt]="comprobanteModalAlt()"
+          (error)="onComprobanteImageError()"
+        />
+      </div>
+    </div>
+  </div>
+</div>
