@@ -14,6 +14,7 @@ import { PropertyRecord } from '../../models/property.model';
 import { ContactManagementService } from '../../services/contact-management.service';
 import { PropertyManagementService } from '../../services/property-management.service';
 import { ReporteMensualPropiedadService } from '../../services/reporte-mensual-propiedad.service';
+import { ReporteAnualComponent } from './reporte-anual/reporte-anual.component';
 
 const MONTH_OPTIONS = [
   { value: 1, label: 'Enero' },
@@ -33,7 +34,7 @@ const MONTH_OPTIONS = [
 @Component({
   selector: 'app-property-monthly-report-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, SidebarComponent, TopbarComponent],
+  imports: [CommonModule, FormsModule, SidebarComponent, TopbarComponent, ReporteAnualComponent],
   templateUrl: './property-monthly-report-page.component.html',
   styleUrl: './property-monthly-report-page.component.css'
 })
@@ -51,6 +52,7 @@ export class PropertyMonthlyReportPageComponent {
   readonly selectedAnio = signal<number>(new Date().getFullYear());
   readonly destinatariosInput = signal('');
   readonly report = signal<ReporteMensualPropiedad | null>(null);
+  readonly selectedTab = signal<'mensual' | 'anual'>('mensual');
 
   readonly isLoadingProperties = signal(false);
   readonly isLoadingReport = signal(false);

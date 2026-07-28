@@ -1,0 +1,182 @@
+<section class="panel-card">
+  <div class="field-grid">
+    <label class="field">
+      <span>Año</span>
+      <input
+        type="number"
+        min="2000"
+        [ngModel]="selectedAnio()"
+        (ngModelChange)="selectedAnio.set(+$event)"
+      />
+    </label>
+
+    <label class="field">
+      <span>Propietario</span>
+      <select
+        [ngModel]="selectedPropietarioRut()"
+        (ngModelChange)="selectedPropietarioRut.set($event || null)"
+        [disabled]="isLoadingOwners()"
+      >
+        <option [ngValue]="null">Todos los propietarios</option>
+        <option *ngFor="let owner of owners()" [ngValue]="owner.rut">
+          {{ owner.nombre }} {{ owner.apellido }} ({{ owner.rut }})
+        </option>
+      </select>
+    </label>
+  </div>
+
+  <div class="actions-row">
+    <button
+      type="button"
+      class="secondary-button"
+      [disabled]="isLoading()"
+      (click)="aplicarFiltros()"
+    >
+      <span *ngIf="isLoading()">Consultando...</span>
+      <span *ngIf="!isLoading()">Aplicar filtros</span>
+    </button>
+
+    <button
+      type="button"
+      class="secondary-button export-button"
+      [disabled]="isExporting() || !reporte()"
+      (click)="exportarPdf()"
+    >
+      <span *ngIf="isExporting()">Exportando...</span>
+      <span *ngIf="!isExporting()">Exportar PDF</span>
+    </button>
+
+    <button
+      type="button"
+      class="primary-button"
+      [disabled]="isExporting() || !reporte()"
+      (click)="exportarExcel()"
+    >
+      <span *ngIf="isExporting()">Exportando...</span>
+      <span *ngIf="!isExporting()">Exportar Excel</span>
+    </button>
+  </div>
+</section>
+
+<p *ngIf="error()" class="error-banner">{{ error() }}</p>
+<div *ngIf="isLoading()" class="loading-state">Cargando reporte anual...</div>
+
+<ng-container *ngIf="reporte() as r">
+  <section class="summary-grid">
+    <article class="summary-card">
+      <p>Total Ingresos</p>
+      <h3 class="text-ingreso">$ {{ r.totalIngresos | number: '1.0-0' }}</h3>
+    </article>
+    <article class="summary-card">
+      <p>Total Egresos</p>
+      <h3 class="text-egreso">$ {{ r.totalEgresos | number: '1.0-0' }}</h3>
+    </article>
+    <article class="summary-card">
+      <p>Balance</p>
+      <h3 [class.text-ingreso]="r.balance >= 0" [class.text-egreso]="r.balance < 0">
+        $ {{ r.balance | number: '1.0-0' }}
+      </h3>
+    </article>
+  </section>
+
+  <section class="panel-card">
+    <p class="eyebrow">Evolución Mensual</p>
+    <h2>Ingresos vs Egresos — {{ r.anio }}</h2>
+
+    <div class="chart-legend">
+      <span class="legend-dot ingreso-dot"></span><span class="legend-label">Ingresos</span>
+      <span class="legend-dot egreso-dot"></span><span class="legend-label">Egresos</span>
+    </div>
+
+    <div class="chart-area">
+      <div class="chart-col" *ngFor="let bar of chartData()">
+        <div class="bars">
+          <div
+            class="bar ingreso"
+            [style.height.%]="bar.ingresoHeight"
+            [attr.title]="'Ingresos: $ ' + (bar.totalIngresos | number: '1.0-0')"
+          ></div>
+          <div
+            class="bar egreso"
+            [style.height.%]="bar.egresoHeight"
+            [attr.title]="'Egresos: $ ' + (bar.totalEgresos | number: '1.0-0')"
+          ></div>
+        </div>
+        <span class="month-label">{{ bar.label }}</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel-card" *ngIf="tablaModo() === 'POR_PROPIETARIO'">
+    <p class="eyebrow">Consolidado</p>
+    <h2>Resumen por Propietario</h2>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Propietario</th>
+            <th>RUT</th>
+            <th>Propiedades</th>
+            <th>Ingresos</th>
+            <th>Egresos</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of propietariosTabla()">
+            <td>{{ p.propietarioNombreCompleto }}</td>
+            <td>{{ p.propietarioRut }}</td>
+            <td>{{ p.cantidadPropiedades }}</td>
+            <td>$ {{ p.totalIngresos | number: '1.0-0' }}</td>
+            <td>$ {{ p.totalEgresos | number: '1.0-0' }}</td>
+            <td>$ {{ p.balance | number: '1.0-0' }}</td>
+          </tr>
+          <tr *ngIf="!propietariosTabla().length">
+            <td colspan="6" class="empty-state">No hay datos para el período seleccionado.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="panel-card" *ngIf="tablaModo() === 'POR_PROPIEDAD'">
+    <p class="eyebrow">Detalle</p>
+    <h2>
+      Propiedades de {{ r.propietarios[0]?.propietarioNombreCompleto }}
+      ({{ r.propietarioRutFiltro }})
+    </h2>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Dirección</th>
+            <th>Comuna</th>
+            <th>Ciudad</th>
+            <th>Región</th>
+            <th>Ingresos</th>
+            <th>Egresos</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of propiedadesTabla()">
+            <td>{{ p.propiedadId }}</td>
+            <td>{{ p.direccion }}</td>
+            <td>{{ p.comuna }}</td>
+            <td>{{ p.ciudad }}</td>
+            <td>{{ p.region }}</td>
+            <td>$ {{ p.totalIngresos | number: '1.0-0' }}</td>
+            <td>$ {{ p.totalEgresos | number: '1.0-0' }}</td>
+            <td>$ {{ p.balance | number: '1.0-0' }}</td>
+          </tr>
+          <tr *ngIf="!propiedadesTabla().length">
+            <td colspan="8" class="empty-state">No hay propiedades para este propietario.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</ng-container>
