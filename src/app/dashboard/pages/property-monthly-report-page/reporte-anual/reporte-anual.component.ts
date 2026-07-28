@@ -34,7 +34,6 @@ export class ReporteAnualComponent {
   private readonly reporteService = inject(ReporteAnualPropietariosService);
   private readonly contactService = inject(ContactManagementService);
 
-  readonly currentYear = new Date().getFullYear();
   readonly selectedAnio = signal<number>(new Date().getFullYear());
   readonly selectedPropietarioRut = signal<string | null>(null);
   readonly owners = signal<ContactRecord[]>([]);
