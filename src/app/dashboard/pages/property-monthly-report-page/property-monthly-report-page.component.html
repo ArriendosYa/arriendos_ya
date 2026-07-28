@@ -8,14 +8,34 @@
       <section class="hero">
         <div>
           <p class="eyebrow">Reportes</p>
-          <h1>Reporte Mensual por Propiedad</h1>
-          <p class="hero-copy">Consulta información mensual y envíala al propietario.</p>
+          <h1>Reportes</h1>
+          <p class="hero-copy">Consulta y analiza la información financiera de las propiedades.</p>
         </div>
       </section>
 
-      <p *ngIf="queryError()" class="error-banner">{{ queryError() }}</p>
-      <p *ngIf="sendError()" class="error-banner">{{ sendError() }}</p>
-      <p *ngIf="successMessage()" class="success-message">{{ successMessage() }}</p>
+      <nav class="tab-nav">
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="selectedTab() === 'mensual'"
+          (click)="selectedTab.set('mensual')"
+        >
+          Reporte Mensual
+        </button>
+        <button
+          type="button"
+          class="tab-btn"
+          [class.active]="selectedTab() === 'anual'"
+          (click)="selectedTab.set('anual')"
+        >
+          Resumen General Anual
+        </button>
+      </nav>
+
+      <ng-container *ngIf="selectedTab() === 'mensual'">
+        <p *ngIf="queryError()" class="error-banner">{{ queryError() }}</p>
+        <p *ngIf="sendError()" class="error-banner">{{ sendError() }}</p>
+        <p *ngIf="successMessage()" class="success-message">{{ successMessage() }}</p>
 
       <section class="panel-card">
         <div class="field-grid">
@@ -173,6 +193,9 @@
           </div>
         </section>
       </ng-container>
+      </ng-container>
+
+      <app-reporte-anual *ngIf="selectedTab() === 'anual'"></app-reporte-anual>
     </main>
   </div>
 </div>
