@@ -21,8 +21,6 @@ export class SidebarComponent {
     { label: 'Propiedades', path: '/propiedades' },
     { label: 'Contactos', path: '/contactos' },
     { label: 'Asignaciones', path: '/asignaciones' },
-    { label: 'Pagos' },
     { label: 'Reportes', path: '/reportes' },
-    { label: 'Configuración' }
   ];
 }
